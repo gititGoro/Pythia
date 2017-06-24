@@ -2,7 +2,9 @@ pragma solidity ^0.4.11;
 //TODO: see common patters for restricting access so that bids can't be inspected without going through request function
 //TODO: read security stuff
 
-contract Pythia{
+import "./AccessRestriction.sol";
+
+contract Pythia is AccessRestriction{
 
     enum KreshmoiDataType{
      STRING,UINT,INT,PICO
