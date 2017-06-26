@@ -7,12 +7,13 @@ pragma solidity ^0.4.11;
 //it isn't atomic
 //SECURITY: use invariants to trigger safe mode if any of the invariants become inconsistent.
 //Breakthrough: It doesn't matter than the state is viewable to all. What matters is that it's private to contracts.
+//TODO: add modifier to allow owner to disable the entire contract in case I want to launch a newer version.
 import "./AccessRestriction.sol";
 
 contract Pythia is AccessRestriction{
 
     enum KreshmoiDataType{
-     STRING,UINT,INT,PICO
+     UINT,INT,MICRO
     }
 
     //A kreshmoi is an ancient Greek word meaning an utterance issued by an oracle.
@@ -21,15 +22,32 @@ contract Pythia is AccessRestriction{
     uint blockNumber;
     string datafeedKey; //eg. USDETH
     KreshmoiDataType dataType;
-    string value_str;
     uint value_uint;
     int value_int;
-    uint value_pico; // each unit of this represents 1 trillionth of a unit
+    uint value_micro; // each unit of this represents 1 millionth of a unit
+   
     address sender;
+    uint range_micro;
     }
 
-    mapping (string => Kreshmoi) bids;
-    mapping (address => Kreshmoi []) successfulHistory; //TODO: make sure dynamic array
+    mapping (string => Kreshmoi) prophecies;
+    mapping (address => uint64) successfulHistory; //TODO: make sure dynamic array
     //if a datafeed is requested and doesn't exist, ("name",false) is created, otherwise ("name",true) is set
     mapping (string => bool) existentDataFeeds; 
+
+    function SubmitProphecy(string feedName, uint value, uint range_micro ) payable notBlacklisted{
+            prophecies[feedName].blockNumber = block.number;
+            prophecies[feedName].datafeedKey =feedName;
+            prophecies[feedName].value_uint =value;
+            prophecies[feedName].dataType =KreshmoiDataType.UINT;
+            prophecies[feedName].range_micro =range_micro;
+            prophecies[feedName].datafeedKey =feedName;
+            prophecies[feedName].sender =msg.sender;
+    }
+
+    modifier notBlacklisted() { //wallet or contract permanently blacklisted. If this was a mistake the user will have to start their own pythia with blackjack and hookers.
+          require(successfulHistory[msg.sender] >=0);
+        _;
+    }
+
 }
