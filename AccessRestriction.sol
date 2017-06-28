@@ -55,7 +55,7 @@ contract AccessRestriction {
         require(msg.value >= _amount);
         _;
         if (msg.value > _amount)
-            msg.sender.send(msg.value - _amount);
+            msg.sender.transfer(msg.value - _amount);
     }
 
     function forceOwnerChange(address _newOwner)
