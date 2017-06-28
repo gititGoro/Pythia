@@ -86,6 +86,8 @@ contract Pythia is AccessRestriction{
                 localVars[2] = (block.number- prophecies[feedName][localVars[0] -1].blockNumber)>255?255:
                     uint8(block.number- prophecies[feedName][localVars[0] -1].blockNumber);
 
+                
+
                 for(uint i = localVars[0]-1; i>0; i--){
                     if((block.number - prophecies[feedName][i].blockNumber)>255 || 
                     uint8(block.number - prophecies[feedName][i].blockNumber)> localVars[2])
@@ -102,7 +104,7 @@ contract Pythia is AccessRestriction{
                         continue;
 
                     if(successfulHistory[prophecies[feedName][i].sender]<minSuccesses)
-                        continue;arra
+                        continue;
                         
                     actualSample[localVars[1]] = prophecies[feedName][i].sender;
                     localVars[1]++;
@@ -113,6 +115,9 @@ contract Pythia is AccessRestriction{
                     
                     result = (result + prophecies[feedName][i].value_int)/localVars[1];
                 }
+
+
+
                 if(localVars[1]==0) //safety against funny bugs
                    return;
 
@@ -122,10 +127,15 @@ contract Pythia is AccessRestriction{
                 }
     }
 
-    function Filter(Kreshmoi[] storage kreshmoi, function(Kreshmoi storage) returns (bool) predicate ) internal returns (Kreshmoi[]){
+    function filterLatest (Kreshmoi kreshmoi, uint8 blockAge) internal returns (bool){
+            return((block.number- kreshmoi.blockNumber)>255?255:
+                uint8(block.number- kreshmoi.blockNumber))>blockAge;
+    }
+
+    function Filter(Kreshmoi[] storage kreshmoi,uint8 initialValue, function(Kreshmoi storage, uint8) returns (bool) predicate ) internal returns (Kreshmoi[]){
              Kreshmoi[] storage chosen;
             for(uint i =0; i<kreshmoi.length;i++){
-                if(predicate(kreshmoi[i]))
+                if(predicate(kreshmoi[i],initialValue))
                     chosen.push(kreshmoi[i]);
             }
             Kreshmoi[] memory actual =new Kreshmoi[](chosen.length);
