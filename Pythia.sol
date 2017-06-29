@@ -9,6 +9,7 @@ pragma solidity ^0.4.11;
 //Breakthrough: It doesn't matter than the state is viewable to all. What matters is that it's private to contracts.
 //TODO: add modifier to allow owner to disable the entire contract in case I want to launch a newer version.
 //TODO: make a withdrawal function
+//TODO: make a reduce function 
 import "./AccessRestriction.sol";
 
 contract Pythia is AccessRestriction{
@@ -74,65 +75,86 @@ contract Pythia is AccessRestriction{
     }
 
     function RequestInteger(string feedName, uint8 maxSampleSize, int32 acceptableDrift, uint16 minSuccesses) payable returns (int32 result){
-               uint8 [] memory localVars = new uint8[](4);//prophecyLength,actualSampleSize,blockAge,existsInSample
-                                            //rewardPerWinner,
-                localVars[0] = prophecies[feedName].length>255?255:uint8(prophecies[feedName].length);
-                if(localVars[0]==0 || maxSampleSize>50 || msg.value<maxSampleSize)
-                    {
-                        return;
-                    }
-             
-                address [] memory actualSample = new address[](maxSampleSize);
-                localVars[2] = (block.number- prophecies[feedName][localVars[0] -1].blockNumber)>255?255:
-                    uint8(block.number- prophecies[feedName][localVars[0] -1].blockNumber);
+        uint8 [] memory localVars = new uint8[](2);//prophecyLength,actualSampleSize,blockAge,existsInSample
+                                    //rewardPerWinner,
+        localVars[0] = prophecies[feedName].length>255?255:uint8(prophecies[feedName].length);
+        if(localVars[0]==0 || maxSampleSize>50 || msg.value<maxSampleSize)
+            {
+                return;
+            }
+        
+        localVars[1] = (block.number- prophecies[feedName][localVars[0] -1].blockNumber)>255?255:
+            uint8(block.number- prophecies[feedName][localVars[0] -1].blockNumber);
 
-                
+        Kreshmoi[] memory filtered = Filter(prophecies[feedName],localVars[1],filterLatest);
+                            filtered = Reduce(filtered,FilterOutDuplicateUsers); 
+                            filtered = ThresholdMinSuccesses(filtered, minSuccesses);    
+        
+        for(uint i = filtered.length-1; i>0; i--){
+        
+            if(filtered[i].value_int-result>acceptableDrift)
+                throw; 
 
-                for(uint i = localVars[0]-1; i>0; i--){
-                    if((block.number - prophecies[feedName][i].blockNumber)>255 || 
-                    uint8(block.number - prophecies[feedName][i].blockNumber)> localVars[2])
-                       break;
-
-                     localVars[3] = 0;
-                    for(uint j=0;j< localVars[1];j++){
-                        if(actualSample[j]==prophecies[feedName][i].sender){
-                             localVars[3] = 1;
-                            break;
-                            }
-                    }
-                    if(localVars[3]==1) 
-                        continue;
-
-                    if(successfulHistory[prophecies[feedName][i].sender]<minSuccesses)
-                        continue;
-                        
-                    actualSample[localVars[1]] = prophecies[feedName][i].sender;
-                    localVars[1]++;
-                    successfulHistory[prophecies[feedName][i].sender]++;
-
-                   if(prophecies[feedName][i].value_int-result>acceptableDrift)
-                      throw;
-                    
-                    result = (result + prophecies[feedName][i].value_int)/localVars[1];
-                }
+            successfulHistory[filtered[i].sender]++;
+            result = (result + filtered[i].value_int)/(filtered.length>255?255:uint8(filtered.length));
+        }
 
 
-
-                if(localVars[1]==0) //safety against funny bugs
-                   return;
-
-               uint rewardPerWinner = msg.value/localVars[1]; //rewardperWinner
-                for(i=0;i<localVars[1];i++){
-                    rewardForSuccessfulProphecies[actualSample[i]]+=rewardPerWinner;
-                }
+        uint rewardPerWinner = msg.value/filtered.length; //rewardperWinner
+        for(i=0;i<filtered.length;i++){
+            rewardForSuccessfulProphecies[filtered[i].sender]+=rewardPerWinner;
+        }
     }
 
-    function filterLatest (Kreshmoi kreshmoi, uint8 blockAge) internal returns (bool){
+    function ThresholdMinSuccesses(Kreshmoi [] memory initialKreshmoi, uint16 minSuccesses) internal returns (Kreshmoi[] memory){
+        bool [] memory valid = new bool[] (initialKreshmoi.length);
+        uint validCount  = 0;
+        for(uint i =0;i<valid.length;i++){
+            if(successfulHistory[initialKreshmoi[i].sender]>=minSuccesses)
+                {
+                    valid[i]= true;
+                    validCount++;
+                }
+        }
+
+        Kreshmoi[] memory threshold = new Kreshmoi[](validCount);
+        validCount = 0;
+        for(i =0;i<initialKreshmoi.length;i++)
+        {
+            if(valid[i]){
+                threshold[validCount]= initialKreshmoi[i];
+                validCount++;
+            }
+        }
+        return threshold;
+    }
+
+    function filterLatest (Kreshmoi memory kreshmoi, uint8 blockAge) internal returns (bool){
             return((block.number- kreshmoi.blockNumber)>255?255:
                 uint8(block.number- kreshmoi.blockNumber))>blockAge;
     }
 
-    function Filter(Kreshmoi[] storage kreshmoi,uint8 initialValue, function(Kreshmoi storage, uint8) returns (bool) predicate ) internal returns (Kreshmoi[]){
+    function FilterOutDuplicateUsers(Kreshmoi[] memory accumulator, Kreshmoi memory current) internal returns (Kreshmoi[] memory){  
+       Kreshmoi [] memory potentialNewAccumulator = new Kreshmoi[](accumulator.length+1);
+        for(uint i =0;i<accumulator.length;i++){
+            if(current.sender == accumulator[i].sender)
+                return accumulator; 
+                potentialNewAccumulator[i] = accumulator[i];
+        }
+        potentialNewAccumulator[accumulator.length] = current;
+        return potentialNewAccumulator;
+    }
+
+    function Reduce (Kreshmoi[] initialArray, function (Kreshmoi [] memory ,Kreshmoi memory) returns (Kreshmoi [] memory) reducer) internal returns(Kreshmoi[]){
+      Kreshmoi [] memory accumulator = new Kreshmoi[](0);
+        for(uint i =0;i<initialArray.length;i++)
+        {
+              accumulator = reducer(accumulator, initialArray[0]);
+        }
+        return accumulator;
+    }
+
+    function Filter(Kreshmoi[] storage kreshmoi,uint8 initialValue, function(Kreshmoi memory, uint8) returns (bool) predicate ) internal returns (Kreshmoi[]){
              Kreshmoi[] storage chosen;
             for(uint i =0; i<kreshmoi.length;i++){
                 if(predicate(kreshmoi[i],initialValue))
