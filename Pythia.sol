@@ -74,11 +74,12 @@ contract Pythia is AccessRestriction{
         ProphecySubmission(msg.sender,feedName);
     }
 
-    function RequestInteger(string feedName, uint8 maxSampleSize, int32 acceptableDrift, uint16 minSuccesses) payable returns (int32 result){
+    function RequestInteger(string feedName, uint8 maxSampleSize, int32 acceptableRange, uint16 minSuccesses) payable returns (int32 result){
         uint8 [] memory localVars = new uint8[](2);//prophecyLength,actualSampleSize,blockAge,existsInSample
                                     //rewardPerWinner,
+        
         localVars[0] = prophecies[feedName].length>255?255:uint8(prophecies[feedName].length);
-        if(localVars[0]==0 || maxSampleSize>50 || msg.value<maxSampleSize)
+        if(localVars[0]==0 || maxSampleSize>50 || msg.value<maxSampleSize)//last condition because each winner should get at least 1 wei
             {
                 return;
             }
@@ -88,22 +89,28 @@ contract Pythia is AccessRestriction{
 
         Kreshmoi[] memory filtered = Filter(prophecies[feedName],localVars[1],filterLatest);
                             filtered = Reduce(filtered,FilterOutDuplicateUsers); 
-                            filtered = ThresholdMinSuccesses(filtered, minSuccesses);    
+                            filtered = ThresholdMinSuccesses(filtered, minSuccesses);   
+                            filtered = SortKreshmoiByIntValue(filtered);
+                        
+        require(filtered[filtered.length-1].value_int-filtered[0].value_int>acceptableRange);
         
-        for(uint i = filtered.length-1; i>0; i--){
         
-            if(filtered[i].value_int-result>acceptableDrift)
-                throw; 
+        for(uint i = 0; i<(filtered.length>255?255:filtered.length); i++){
 
             successfulHistory[filtered[i].sender]++;
-            result = (result + filtered[i].value_int)/(filtered.length>255?255:uint8(filtered.length));
+            result = result + filtered[i].value_int;
         }
-
+        result = result/int32(filtered.length);
 
         uint rewardPerWinner = msg.value/filtered.length; //rewardperWinner
         for(i=0;i<filtered.length;i++){
             rewardForSuccessfulProphecies[filtered[i].sender]+=rewardPerWinner;
         }
+    }
+
+    function SortKreshmoiByIntValue(Kreshmoi [] memory kreshmoi) internal returns (Kreshmoi [] memory){
+
+        //TODO: implement efficient sort algorithm: http://www.geeksforgeeks.org/iterative-quick-sort/
     }
 
     function ThresholdMinSuccesses(Kreshmoi [] memory initialKreshmoi, uint16 minSuccesses) internal returns (Kreshmoi[] memory){
