@@ -1,5 +1,4 @@
 pragma solidity ^0.4.11;
-//TODO: see common patters for restricting access so that bids can't be inspected without going through request function
 //TODO: read security stuff
 //TODO: when placing a bid, do an inplace sort so that the final request doesn't run out of gas
 //SECURITY: Always change all variables and only as the very last act, transfer ether.
@@ -9,7 +8,6 @@ pragma solidity ^0.4.11;
 //Breakthrough: It doesn't matter than the state is viewable to all. What matters is that it's private to contracts.
 //TODO: add modifier to allow owner to disable the entire contract in case I want to launch a newer version.
 //TODO: make a withdrawal function
-//TODO: make a reduce function 
 import "./AccessRestriction.sol";
 
 contract Pythia is AccessRestriction{
@@ -22,21 +20,19 @@ contract Pythia is AccessRestriction{
     //In our decentralized oracle, Pythia, Kreshmoi will be the name of the data structure representing an "utterance" on a given datafeed.
     struct Kreshmoi{
     uint blockNumber;
-    string datafeedKey; //eg. USDETH
     KreshmoiDataType dataType;
     int32 value_int;
     int64 value_micro; // each unit of this represents 1 millionth of a unit
    
     address sender;
-    uint64 range_micro;
     }
     mapping (address => uint) rewardForSuccessfulProphecies; //stores the ether value of each successful kreshmoi. And yes, you can forget about reentrancy attacks.
-    mapping (string => Kreshmoi[]) prophecies;
+    mapping (string => Kreshmoi[]) prophecies; //key is USDETH or CPIXZA for instance
     mapping (address => uint64) successfulHistory; //TODO: make sure dynamic array
     //if a datafeed is requested and doesn't exist, ("name",false) is created, otherwise ("name",true) is set
     mapping (string => bool) existentDataFeeds; 
 
-    function SubmitIntegerProphecy(string feedName, int32 value, uint64 range_micro ) notBlacklisted returns (string result){
+    function SubmitIntegerProphecy(string feedName, int32 value ) notBlacklisted returns (string result){
         uint length = prophecies[feedName].length;
         if(length >0 && prophecies[feedName][length-1].dataType!=KreshmoiDataType.INT){
             result = "invalid datatype for feed. Expected decimal but was int";
@@ -45,17 +41,14 @@ contract Pythia is AccessRestriction{
         result = "success";
         prophecies[feedName].length+=1;
         prophecies[feedName][length].blockNumber = block.number;
-        prophecies[feedName][length].datafeedKey =feedName;
         prophecies[feedName][length].value_int =value;
         prophecies[feedName][length].dataType =KreshmoiDataType.INT;
-        prophecies[feedName][length].range_micro =range_micro;
-        prophecies[feedName][length].datafeedKey =feedName;
         prophecies[feedName][length].sender =msg.sender;
 
         ProphecySubmission(msg.sender,feedName);
     }
 
-   function SubmitDecimalProphecy(string feedName, int64 value, uint64 range_micro ) notBlacklisted returns (string result){
+   function SubmitDecimalProphecy(string feedName, int64 value ) notBlacklisted returns (string result){
         uint length = prophecies[feedName].length;
            if(length >0 && prophecies[feedName][length-1].dataType!=KreshmoiDataType.INT){
             result = "invalid datatype for feed. Expected int but was decimal";
@@ -64,39 +57,32 @@ contract Pythia is AccessRestriction{
 
         prophecies[feedName].length+=1;
         prophecies[feedName][length].blockNumber = block.number;
-        prophecies[feedName][length].datafeedKey =feedName;
         prophecies[feedName][length].value_micro =value;
         prophecies[feedName][length].dataType =KreshmoiDataType.MICRO;
-        prophecies[feedName][length].range_micro =range_micro;
-        prophecies[feedName][length].datafeedKey =feedName;
         prophecies[feedName][length].sender =msg.sender;
 
         ProphecySubmission(msg.sender,feedName);
     }
 
     function RequestInteger(string feedName, uint8 maxSampleSize, int32 acceptableRange, uint16 minSuccesses) payable returns (int32 result){
-        uint8 [] memory localVars = new uint8[](2);//prophecyLength,actualSampleSize,blockAge,existsInSample
-                                    //rewardPerWinner,
-        
-        localVars[0] = prophecies[feedName].length>255?255:uint8(prophecies[feedName].length);
-        if(localVars[0]==0 || maxSampleSize>50 || msg.value<maxSampleSize)//last condition because each winner should get at least 1 wei
+        uint8 prophecyLength;
+        uint8 actualSampleSize;
+        prophecyLength = prophecies[feedName].length>255?255:uint8(prophecies[feedName].length);
+        if(prophecyLength==0 || maxSampleSize>50 || msg.value<maxSampleSize)//last condition because each winner should get at least 1 wei
             {
                 return;
             }
         
-        localVars[1] = (block.number- prophecies[feedName][localVars[0] -1].blockNumber)>255?255:
-            uint8(block.number- prophecies[feedName][localVars[0] -1].blockNumber);
+        actualSampleSize = (block.number- prophecies[feedName][prophecyLength -1].blockNumber)>255?255:
+            uint8(block.number- prophecies[feedName][prophecyLength -1].blockNumber);
 
-        Kreshmoi[] memory filtered = Filter(prophecies[feedName],localVars[1],filterLatest);
+        Kreshmoi[] memory filtered = Filter(prophecies[feedName],actualSampleSize,filterLatest);
                             filtered = Reduce(filtered,FilterOutDuplicateUsers); 
                             filtered = ThresholdMinSuccesses(filtered, minSuccesses);   
-                            filtered = SortKreshmoiByIntValue(filtered);
-                        
-        require(filtered[filtered.length-1].value_int-filtered[0].value_int>acceptableRange);
         
+        require(GetRange(filtered)<=acceptableRange);
         
         for(uint i = 0; i<(filtered.length>255?255:filtered.length); i++){
-
             successfulHistory[filtered[i].sender]++;
             result = result + filtered[i].value_int;
         }
@@ -108,9 +94,17 @@ contract Pythia is AccessRestriction{
         }
     }
 
-    function SortKreshmoiByIntValue(Kreshmoi [] memory kreshmoi) internal returns (Kreshmoi [] memory){
-
-        //TODO: implement efficient sort algorithm: http://www.geeksforgeeks.org/iterative-quick-sort/
+    function GetRange(Kreshmoi [] memory kreshmoi) internal returns (int32){
+        int32[] memory biggestSmallest = new int32[](2);
+        for(uint i =0;i<kreshmoi.length;i++){
+            if(kreshmoi[i].value_int<biggestSmallest[0]){
+                biggestSmallest[0] = kreshmoi[i].value_int;
+            }
+            if(kreshmoi[i].value_int>biggestSmallest[1]){
+                biggestSmallest[1] = kreshmoi[i].value_int;
+            }
+        }
+        return biggestSmallest[1] - biggestSmallest[0];
     }
 
     function ThresholdMinSuccesses(Kreshmoi [] memory initialKreshmoi, uint16 minSuccesses) internal returns (Kreshmoi[] memory){
@@ -126,8 +120,7 @@ contract Pythia is AccessRestriction{
 
         Kreshmoi[] memory threshold = new Kreshmoi[](validCount);
         validCount = 0;
-        for(i =0;i<initialKreshmoi.length;i++)
-        {
+        for(i =0;i<initialKreshmoi.length;i++){
             if(valid[i]){
                 threshold[validCount]= initialKreshmoi[i];
                 validCount++;
@@ -154,24 +147,29 @@ contract Pythia is AccessRestriction{
 
     function Reduce (Kreshmoi[] initialArray, function (Kreshmoi [] memory ,Kreshmoi memory) returns (Kreshmoi [] memory) reducer) internal returns(Kreshmoi[]){
       Kreshmoi [] memory accumulator = new Kreshmoi[](0);
-        for(uint i =0;i<initialArray.length;i++)
-        {
+        for(uint i =0;i<initialArray.length;i++){
               accumulator = reducer(accumulator, initialArray[0]);
         }
         return accumulator;
     }
 
-    function Filter(Kreshmoi[] storage kreshmoi,uint8 initialValue, function(Kreshmoi memory, uint8) returns (bool) predicate ) internal returns (Kreshmoi[]){
-             Kreshmoi[] storage chosen;
+    function Filter(Kreshmoi[] memory kreshmoi,uint8 initialValue, function(Kreshmoi memory, uint8) returns (bool) predicate ) internal returns (Kreshmoi[]){
+             bool[] memory chosen = new bool[](kreshmoi.length);
+             uint8 actualLength =0;
+
             for(uint i =0; i<kreshmoi.length;i++){
-                if(predicate(kreshmoi[i],initialValue))
-                    chosen.push(kreshmoi[i]);
+                if(predicate(kreshmoi[i],initialValue)){
+                    chosen[i] = true;
+                    actualLength++;
+                }
             }
-            Kreshmoi[] memory actual =new Kreshmoi[](chosen.length);
+            
+            Kreshmoi[] memory actual =new Kreshmoi[](actualLength);
+            actualLength=0;
             for(i =0;i<chosen.length;i++){
-                actual[i] = chosen[i];
-                delete chosen[i];
-                chosen.length--;
+                if(chosen[i]){
+                    actual[actualLength++] = kreshmoi[i];
+                }
             }
             return actual;
         }
