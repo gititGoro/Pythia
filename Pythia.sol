@@ -16,6 +16,10 @@ contract Pythia is AccessRestriction{
         INT,MICRO
     }
 
+    function Pythia(){
+        
+    }
+
     //A kreshmoi is an ancient Greek word meaning an utterance issued by an oracle.
     //In our decentralized oracle, Pythia, Kreshmoi will be the name of the data structure representing an "utterance" on a given datafeed.
     struct Kreshmoi{
@@ -65,15 +69,13 @@ contract Pythia is AccessRestriction{
     }
 
     function RequestInteger(string feedName, uint8 maxSampleSize, int32 acceptableRange, uint16 minSuccesses) payable returns (int32 result){
-        uint8 prophecyLength;
-        uint8 actualSampleSize;
-        prophecyLength = prophecies[feedName].length>255?255:uint8(prophecies[feedName].length);
+       uint8 prophecyLength = prophecies[feedName].length>255?255:uint8(prophecies[feedName].length);
         if(prophecyLength==0 || maxSampleSize>50 || msg.value<maxSampleSize)//last condition because each winner should get at least 1 wei
             {
                 return;
             }
         
-        actualSampleSize = (block.number- prophecies[feedName][prophecyLength -1].blockNumber)>255?255:
+       uint8 actualSampleSize = (block.number- prophecies[feedName][prophecyLength -1].blockNumber)>255?255:
             uint8(block.number- prophecies[feedName][prophecyLength -1].blockNumber);
 
         Kreshmoi[] memory filtered = Filter(prophecies[feedName],actualSampleSize,filterLatest);
