@@ -34,7 +34,6 @@ contract Pythia is AccessRestriction{
     mapping (string => Kreshmoi[]) prophecies; //key is USDETH or CPIXZA for instance
     mapping (address => uint64) successfulHistory; //TODO: make sure dynamic array
     //if a datafeed is requested and doesn't exist, ("name",false) is created, otherwise ("name",true) is set
-    mapping (string => bool) existentDataFeeds; 
 
     function SubmitIntegerProphecy(string feedName, int32 value ) notBlacklisted returns (string result){
         uint length = prophecies[feedName].length;
