@@ -3,7 +3,7 @@ var Pythia = artifacts.require("../contracts/Pythia.sol");
 contract('Pythia', function (accounts) {
     var PythiaInstance;
     var ethzarProphecyLength;
-    var fistAccount = accounts[0];
+    var firstAccount = accounts[0];
     var secondAccount = accounts[1];
     var submitResult;
 
@@ -12,7 +12,7 @@ contract('Pythia', function (accounts) {
             PythiaInstance = instance;
             return instance.SubmitIntegerProphecy("ETHZAR", 120, { from: secondAccount });
         })
-        .then(result => submitResult = result);
+            .then(result => submitResult = result);
     });
 
     it("should submit 1 integer prophecy to ETHZAR", () => {
@@ -27,4 +27,22 @@ contract('Pythia', function (accounts) {
         assert.equal(log.args.from, secondAccount);
         assert.equal(log.args.datafeed, "ETHZAR");
     });
+
+    it("should validate prophecy", () => {
+        return PythiaInstance.ValidateProphecyLength.call("ETHZAR", 12, 100)
+            .then(prophecyLength => {
+                assert.equal(prophecyLength, 1, "There should only be one prophecy submitted");
+            });
+    });
+
+    it("RequestInteger should create result", () => {
+        return PythiaInstance.RequestInteger("ETHZAR", 10, 10, 0, { from: firstAccount })
+            .then(receipt => {
+
+                return PythiaInstance.GetIntResult.call("ETHZAR", { from: firstAccount });
+            }).then(intResult => {
+                assert.equal(intResult, 120);
+            });
+    });
+
 });

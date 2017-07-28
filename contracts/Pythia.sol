@@ -30,10 +30,12 @@ contract Pythia is AccessRestriction{
    
     address sender;
     }
+
     mapping (address => uint) rewardForSuccessfulProphecies; //stores the ether value of each successful kreshmoi. And yes, you can forget about reentrancy attacks.
     mapping (string => Kreshmoi[]) prophecies; //key is USDETH or CPIXZA for instance
     mapping (address => uint64) successfulHistory; //TODO: make sure dynamic array
-    //if a datafeed is requested and doesn't exist, ("name",false) is created, otherwise ("name",true) is set
+    mapping (address => mapping (string => int32)) latestIntResult;
+    mapping( address => mapping(string => bool)) intResultExists;
 
     function SubmitIntegerProphecy(string feedName, int32 value ) notBlacklisted returns (string result){
         uint length = prophecies[feedName].length;
@@ -67,12 +69,20 @@ contract Pythia is AccessRestriction{
         ProphecySubmission(msg.sender,feedName);
     }
 
-    function RequestInteger(string feedName, uint8 maxSampleSize, int32 acceptableRange, uint16 minSuccesses) payable returns (int32 result){
-       uint8 prophecyLength = prophecies[feedName].length>255?255:uint8(prophecies[feedName].length);
-        if(prophecyLength==0 || maxSampleSize>50 || msg.value<maxSampleSize)//last condition because each winner should get at least 1 wei
-            {
-                return;
-            }
+    function ValidateProphecyLength(string feedName, uint8 maxSampleSize, uint weiAmount) returns (uint8){
+        uint8 prophecyLength = prophecies[feedName].length>255?255:uint8(prophecies[feedName].length);
+        if(prophecyLength==0 || maxSampleSize>50 || weiAmount<maxSampleSize) throw;//last condition because each winner should get at least 1 wei  
+        return prophecyLength;
+    }
+    
+    function GetIntResult(string feedName) returns (int32){
+        if(intResultExists[msg.sender][feedName])
+            return latestIntResult[msg.sender][feedName];
+        throw;
+    }
+
+    function RequestInteger(string feedName, uint8 maxSampleSize, int32 acceptableRange, uint16 minSuccesses) payable {
+       uint8 prophecyLength = ValidateProphecyLength(feedName,maxSampleSize,msg.value); //TODO: this is failing
         
        uint8 actualSampleSize = (block.number- prophecies[feedName][prophecyLength -1].blockNumber)>255?255:
             uint8(block.number- prophecies[feedName][prophecyLength -1].blockNumber);
@@ -81,15 +91,20 @@ contract Pythia is AccessRestriction{
                             filtered = Reduce(filtered,FilterOutDuplicateUsers); 
                             filtered = ThresholdMinSuccesses(filtered, minSuccesses);   
         
-        require(GetRange(filtered)<=acceptableRange);
-        
+        if(GetRange(filtered)>acceptableRange)
+            throw;
+            
+        int32 result = 0;
         for(uint i = 0; i<(filtered.length>255?255:filtered.length); i++){
             successfulHistory[filtered[i].sender]++;
             result = result + filtered[i].value_int;
         }
         result = result/int32(filtered.length);
 
-        uint rewardPerWinner = msg.value/filtered.length; //rewardperWinner
+        uint rewardPerWinner = msg.value / filtered.length; //rewardperWinner
+
+        latestIntResult[msg.sender][feedName] = result;
+        intResultExists[msg.sender][feedName] = true;
         for(i=0;i<filtered.length;i++){
             rewardForSuccessfulProphecies[filtered[i].sender]+=rewardPerWinner;
         }
