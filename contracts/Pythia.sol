@@ -44,7 +44,7 @@ contract Pythia is AccessRestriction{
     mapping (address => uint) rewardForSuccessfulProphecies; //stores the ether value of each successful kreshmoi. And yes, you can forget about reentrancy attacks.
     mapping (string => Kreshmoi[]) prophecies; //key is USDETH or CPIXZA for instance
     mapping (string => Bounty[]) openBounties; 
-
+    
     function PostBounty(string datafeed, uint16 maxBlockRange,uint maxValueRange,uint8 requiredSampleSize,uint8 decimalPlaces) payable{
         if(msg.value/requiredSampleSize<1)
             throw;
@@ -64,6 +64,4 @@ contract Pythia is AccessRestriction{
     }
     
     event BountyPosted (address from, string datafeed);
-    event ProphecySubmission(address from, string datafeed );
-
 }
