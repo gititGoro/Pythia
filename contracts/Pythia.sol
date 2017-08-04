@@ -71,9 +71,6 @@ contract Pythia is PythiaBase{
         }
         return datafeedNames[index];
     }
-    //A kreshmoi is an ancient Greek word meaning an utterance issued by an oracle.
-    //In our decentralized oracle, Pythia, Kreshmoi will be the name of the data structure 
-    //representing a successful "utterance" on a given datafeed
 
     function PostBounty(string datafeed, uint16 maxBlockRange,uint maxValueRange,uint8 requiredSampleSize,uint8 decimalPlaces) payable{
 

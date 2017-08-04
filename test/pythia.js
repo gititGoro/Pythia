@@ -1,5 +1,6 @@
 //TO TEST: accounts are unique, moving blockrange window, large range spoils a bounty,mismatch between sending value and reward, rolling bounty window
 //TO TEST: Description stuff
+//Todo: refactor test into subtests
 var Pythia = artifacts.require("../contracts/Pythia.sol");
 
 contract('Pythia', function (accounts) {
@@ -61,23 +62,29 @@ contract('Pythia', function (accounts) {
                     assert.equal(kreshmoi.length, 0, "Expected zero successful kreshmoi");
                     return PythiaInstance.OfferKreshmoi("ETHZAR", 10, { from: thirdAccount });
                 }).then(result => {
-                    assertEventLog(result, "ETHZAR", thirdAccount);
+                    
+                    assert.equal(result.logs.length, 1, "expected 2 logs emitted");
+                    assertEventLog(result.logs[0], "KreshmoiOffered", thirdAccount, "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
                 }).then(kreshmoi => {
                     assert.equal(kreshmoi.length, 0, "Expected zero successful kreshmoi");
                     return PythiaInstance.OfferKreshmoi("ETHZAR", 4, { from: fourthAccount });
                 }).then(result => {
-                    assertEventLog(result, "ETHZAR", fourthAccount);
+       
+                     assert.equal(result.logs.length, 1, "expected 2 logs emitted");
+                    assertEventLog(result.logs[0], "KreshmoiOffered", fourthAccount, "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
                 }).then(kreshmoi => {
                     assert.equal(kreshmoi.length, 0, "Expected zero successful kreshmoi");
                     return PythiaInstance.OfferKreshmoi("ETHZAR", 7, { from: fifthAccount });
                 }).then(result => {
-                    assertEventLog(result, "ETHZAR", fifthAccount);
+                    assert.equal(result.logs.length, 1, "expected 2 logs emitted");
+                    assertEventLog(result.logs[0], "KreshmoiOffered", fifthAccount, "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
                 }).then(kreshmoi => {
+                    console.log("expecting a kreshmoi");
                     assert.equal(kreshmoi.length, 1, "Expected a successful kreshmoi");
-                    assertKreshmoi(kreshmoi, 2, 5.75, 4, 8, firstAccount);
+                    assertKreshmoi(kreshmoi[0], 5.75);
                     return PythiaInstance.GetBountyReward.call({ from: secondAccount });
 
                     //assert second account was paid
