@@ -28,8 +28,7 @@ contract('Pythia', function (accounts) {
             });
         });
 
-        it("should offer 4 successful kreshmoi", () => {
-
+        it("Checking balances and then post bounty", () => {
             var accountBalances = [0, 0, 0, 0];
             return PythiaInstance.GetBountyReward.call({ from: secondAccount })
                 .then(initialBalance => {
@@ -47,10 +46,13 @@ contract('Pythia', function (accounts) {
                     return PythiaInstance.PostBounty("ETHZAR", fixtureBounty.maxBlockRange,
                         fixtureBounty.maxValueRange, fixtureBounty.RequiredSampleSize, fixtureBounty.decimalPlaces,
                         { from: secondAccount, value: "400" });
-                }).then(result => {
-                    console.log("about to offer kreshmoi");
-                    return PythiaInstance.OfferKreshmoi("ETHZAR", 2, { from: secondAccount });
-                })
+                });
+
+        });
+
+        it("respond to bounty and assert", () => { //FAILING
+            console.log("about to offer kreshmoi");
+            return PythiaInstance.OfferKreshmoi("ETHZAR", 2, { from: secondAccount })
                 .then(result => {
                     assert.equal(result.logs.length, 2, "expected 2 logs emitted");
 
@@ -62,7 +64,7 @@ contract('Pythia', function (accounts) {
                     assert.equal(kreshmoi.length, 0, "Expected zero successful kreshmoi");
                     return PythiaInstance.OfferKreshmoi("ETHZAR", 10, { from: thirdAccount });
                 }).then(result => {
-                    
+
                     assert.equal(result.logs.length, 1, "expected 2 logs emitted");
                     assertEventLog(result.logs[0], "KreshmoiOffered", thirdAccount, "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
@@ -70,8 +72,8 @@ contract('Pythia', function (accounts) {
                     assert.equal(kreshmoi.length, 0, "Expected zero successful kreshmoi");
                     return PythiaInstance.OfferKreshmoi("ETHZAR", 4, { from: fourthAccount });
                 }).then(result => {
-       
-                     assert.equal(result.logs.length, 1, "expected 2 logs emitted");
+
+                    assert.equal(result.logs.length, 1, "expected 2 logs emitted");
                     assertEventLog(result.logs[0], "KreshmoiOffered", fourthAccount, "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
                 }).then(kreshmoi => {
@@ -128,6 +130,7 @@ contract('Pythia', function (accounts) {
                     return done();
                 });
         });
+
     });
 
     function getBalancePromise(account) {
