@@ -10,11 +10,11 @@ pragma solidity ^0.4.11;
 /*Domain language: Post bounty, OfferKreshmoi, Reward bounty, 
 Collect bounty reward, Successful kreshmoi
 */
-import "./AccessRestriction.sol";
 import "./StringUtils.sol";
+import "./PythiaBase.sol";
 
-contract Pythia is AccessRestriction{
-   
+contract Pythia is PythiaBase{
+
     mapping (address => uint) rewardForSuccessfulProphecies; //stores the ether value of each successful kreshmoi. And yes, you can forget about reentrancy attacks.
     mapping (string => Kreshmoi[]) successfulKreshmoi; //key is USDETH or CPIXZA for instance
     mapping (string => Bounty[]) openBounties; 
@@ -73,27 +73,7 @@ contract Pythia is AccessRestriction{
     }
     //A kreshmoi is an ancient Greek word meaning an utterance issued by an oracle.
     //In our decentralized oracle, Pythia, Kreshmoi will be the name of the data structure 
-    //representing a successful "utterance" on a given datafeed.
-    struct Kreshmoi{
-    uint16 blockRange;
-    uint8 decimalPlaces;// floats don't exist in solidity (yet)
-    int64 value;
-    uint8 sampleSize;
-    uint valueRange;
-    address bountyPoster;
-    }
-
-    struct Bounty{
-        uint16 maxBlockRange;
-        uint earliestBlock;
-        uint weiRewardPerOracle;
-        uint8 requiredSampleSize;
-        uint maxValueRange;
-        address[] oracles;
-        int64 [] predictions;
-        uint8 decimalPlaces;
-        address poster;
-    }
+    //representing a successful "utterance" on a given datafeed
 
     function PostBounty(string datafeed, uint16 maxBlockRange,uint maxValueRange,uint8 requiredSampleSize,uint8 decimalPlaces) payable{
 
@@ -149,7 +129,6 @@ contract Pythia is AccessRestriction{
         Bounty [] bounties = openBounties[datafeed];
 
         for( uint i =0;i<bounties.length;i++){
-            for(uint currentPosition = bounties.length-1;currentPosition>=0 && bounties[i].oracles[currentPosition]!= address(0);currentPosition--){}
             bool finalKreshmoi = bounties[i].predictions.length == bounties[i].requiredSampleSize-1;
 
             if(bounties[i].earliestBlock==0 || block.number - uint(bounties[i].earliestBlock)>uint(bounties[i].maxBlockRange)) //reset stale bounties
@@ -197,14 +176,23 @@ contract Pythia is AccessRestriction{
                     valueRange:uint(range[1]-range[0]),
                     bountyPoster:openBounties[datafeed][i].poster
                 }));
-            
+                
                 delete openBounties[datafeed][i];
                 for(j= i;j<openBounties[datafeed].length-1;j++){
                     openBounties[datafeed][j] = openBounties[datafeed][j+1];
                 }
+                ProphecyDelivered(datafeed);
             }
         }
         KreshmoiOffered(msg.sender,datafeed);
+    }
+
+    function GetKreshmoi(string datafeed) returns (int64[]) {
+        int64 [] memory values = new int64[](successfulKreshmoi[datafeed].length);
+        for(uint i =0;i<successfulKreshmoi[datafeed].length;i++){
+            values[i] = successfulKreshmoi[datafeed][i].value;
+        }
+        return values;
     }
 
     function ClearBounty(string datafeed, uint index, string reason) internal{
@@ -250,4 +238,5 @@ contract Pythia is AccessRestriction{
     event BountyCleared(string datafeed, uint index, string reason);
     event BountyPosted (address from, string datafeed, uint rewardPerOracle);
     event KreshmoiOffered (address from, string datafeed);
+    event ProphecyDelivered (string datafeed);
 }

@@ -1,4 +1,5 @@
 //TO TEST: accounts are unique, moving blockrange window, large range spoils a bounty,mismatch between sending value and reward, rolling bounty window
+//TO TEST: Description stuff
 var Pythia = artifacts.require("../contracts/Pythia.sol");
 
 contract('Pythia', function (accounts) {
