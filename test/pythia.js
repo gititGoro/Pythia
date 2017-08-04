@@ -1,4 +1,4 @@
-//TO TEST: accounts are unique, moving blockrange window, large range spoils a bounty,mismatch between sending value and reward
+//TO TEST: accounts are unique, moving blockrange window, large range spoils a bounty,mismatch between sending value and reward, rolling bounty window
 var Pythia = artifacts.require("../contracts/Pythia.sol");
 
 contract('Pythia', function (accounts) {
@@ -11,7 +11,6 @@ contract('Pythia', function (accounts) {
         var thirdAccount = accounts[2];
         var fourthAccount = accounts[3];
         var fifthAccount = accounts[4];
-        var submitResult;
 
         var fixtureBounty = {
             maxBlockRange: 10,
@@ -24,19 +23,15 @@ contract('Pythia', function (accounts) {
         before(() => {
             return Pythia.deployed().then(instance => {
                 PythiaInstance = instance;
-
-                return instance.PostBounty("ETHZAR", fixtureBounty.maxBlockRange,
-                    fixtureBounty.maxValueRange, fixtureBounty.RequiredSampleSize, fixtureBounty.decimalPlaces, { from: secondAccount, value: "400" });
-            })
-                .then(result => submitResult = result);
+            });
         });
 
         it("should offer 4 successful kreshmoi", () => {
 
             var accountBalances = [0, 0, 0, 0];
-
             return PythiaInstance.GetBountyReward.call({ from: secondAccount })
                 .then(initialBalance => {
+                    console.log("GetBountyReward successfully called");
                     accountBalances[0] = initialBalance.toNumber();
                     return PythiaInstance.GetBountyReward.call({ from: thirdAccount });
                 }).then(initialBalance => {
@@ -47,10 +42,18 @@ contract('Pythia', function (accounts) {
                     return PythiaInstance.GetBountyReward.call({ from: fifthAccount });
                 }).then(initialBalance => {
                     accountBalances[3] = initialBalance.toNumber();
-
-                    return PythiaInstance.OfferKreshmoi("ETHZAR", 2, { from: secondAccount })
+                    return PythiaInstance.PostBounty("ETHZAR", fixtureBounty.maxBlockRange,
+                        fixtureBounty.maxValueRange, fixtureBounty.RequiredSampleSize, fixtureBounty.decimalPlaces,
+                        { from: secondAccount, value: "400" });
                 }).then(result => {
-                    assertEventLog(result, "ETHZAR", secondAccount);
+                    console.log("about to offer kreshmoi");
+                    return PythiaInstance.OfferKreshmoi("ETHZAR", 2, { from: secondAccount });
+                })
+                .then(result => {
+                    assert.equal(result.logs.length, 2, "expected 2 logs emitted");
+
+                    assertEventLog(result.logs[0], "BountyCleared", "ETHZAR", 0, "Max block range exceeded. All previous bounty hunters have been erased. Bounty reset at current block.");
+                    assertEventLog(result.logs[1], "KreshmoiOffered", secondAccount, "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
                 })
                 .then(kreshmoi => {
@@ -141,12 +144,8 @@ contract('Pythia', function (accounts) {
         assert.equal(kreshmoi.bountyPoster, bountyPoster);
     }
 
-    function assertEventLog(result, ...expectedValues) {
-        var logs = result.logs;
-        assert.equal(logs.length, 1, "There should only be one event log");
-        var log = logs[0];
-
-        assert.equal(log.event, "ProphecySubmission");
+    function assertEventLog(log, logType, ...expectedValues) {
+        assert.equal(log.event, logType);
         assert.isTrue(log.args != null);
         var keys = Object.keys(log.args);
         assert.equal(keys.length, expectedValues.length, "args length should equal " + expectedValues.length);
