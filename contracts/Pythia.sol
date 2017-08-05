@@ -7,6 +7,8 @@ pragma solidity ^0.4.11;
 //SECURITY: use invariants to trigger safe mode if any of the invariants become inconsistent.
 //TODO: add modifier to allow owner to disable the entire contract in case I want to launch a newer version.
 //TODO: make a withdrawal function
+//TODO: Implement GetBounty with datafeed and decimla places
+//TODO: change post bounty to have value adjusted for decimal places
 /*Domain language: Post bounty, OfferKreshmoi, Reward bounty, 
 Collect bounty reward, Successful kreshmoi
 */
@@ -121,7 +123,7 @@ contract Pythia is PythiaBase{
         return rewardForSuccessfulProphecies[msg.sender];
     }
 
-    function OfferKreshmoi(string datafeed,int64 value){
+    function OfferKreshmoi(string datafeed, int64 value){
 
         Bounty [] bounties = openBounties[datafeed];
 
@@ -144,16 +146,18 @@ contract Pythia is PythiaBase{
                 range[0] = 0;
                 range[1] = 0;    
             }
+      
             for(uint j =1;j<openBounties[datafeed][i].predictions.length;j++){
-                range[3] += openBounties[datafeed][i].predictions[j];
-                if(range[0]<openBounties[datafeed][i].predictions[j])
-                    range[0] = openBounties[datafeed][i].predictions[j];
-                if(range[1]>openBounties[datafeed][i].predictions[j])
-                       range[1] = openBounties[datafeed][i].predictions[j];
+                range[2] += openBounties[datafeed][i].predictions[j];
+                if(range[1]<openBounties[datafeed][i].predictions[j])
+                    range[1] = openBounties[datafeed][i].predictions[j];
+                if(range[0]>openBounties[datafeed][i].predictions[j])
+                       range[0] = openBounties[datafeed][i].predictions[j];
             }
+       
             if(value>range[1])
                 range[1]= value;
-
+         
             if(uint(range[1]-range[0])>openBounties[datafeed][i].maxValueRange)
             {
                 ClearBounty(datafeed,i,"The kreshmoi offered exceeded the maximum allowable range for this bounty. All previous bounty hunters have been erased. Bounty reset at current block.");
@@ -163,8 +167,13 @@ contract Pythia is PythiaBase{
             openBounties[datafeed][i].oracles.push(msg.sender);
             
             if(finalKreshmoi){
-                range[2]+=value;
-                range[2]/=openBounties[datafeed][i].requiredSampleSize;
+                range[2] += value;
+                int128 orderOfMagnitude = 1;
+                for(j =0;j<openBounties[datafeed][i].decimalPlaces;j++){
+                    orderOfMagnitude*=10;
+                }
+                range[2] *= orderOfMagnitude;
+                range[2] /= openBounties[datafeed][i].requiredSampleSize;
                 successfulKreshmoi[datafeed].push(Kreshmoi({
                     blockRange: uint16(block.number - openBounties[datafeed][i].earliestBlock),
                     decimalPlaces:openBounties[datafeed][i].decimalPlaces,
@@ -178,18 +187,23 @@ contract Pythia is PythiaBase{
                 for(j= i;j<openBounties[datafeed].length-1;j++){
                     openBounties[datafeed][j] = openBounties[datafeed][j+1];
                 }
+                KreshmoiOffered(msg.sender,datafeed);
                 ProphecyDelivered(datafeed);
+                continue;
             }
+            KreshmoiOffered(msg.sender,datafeed);
         }
-        KreshmoiOffered(msg.sender,datafeed);
     }
 
-    function GetKreshmoi(string datafeed) returns (int64[]) {
+    function GetKreshmoi(string datafeed) returns (int64[],uint8[]) {
         int64 [] memory values = new int64[](successfulKreshmoi[datafeed].length);
+        uint8 [] memory decimalPlaces = new uint8[](successfulKreshmoi[datafeed].length);
+
         for(uint i =0;i<successfulKreshmoi[datafeed].length;i++){
             values[i] = successfulKreshmoi[datafeed][i].value;
+            decimalPlaces[i] = successfulKreshmoi[datafeed][i].decimalPlaces;
         }
-        return values;
+        return (values, decimalPlaces);
     }
 
     function ClearBounty(string datafeed, uint index, string reason) internal{

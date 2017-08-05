@@ -15,7 +15,7 @@ contract('Pythia', function (accounts) {
         var fifthAccount = accounts[4];
 
         var fixtureBounty = {
-            maxBlockRange: 10,
+            maxBlockRange: 1000,
             weiRewardPerOracle: 100,
             RequiredSampleSize: 4,
             maxValueRange: 13,
@@ -54,43 +54,56 @@ contract('Pythia', function (accounts) {
             console.log("about to offer kreshmoi");
             return PythiaInstance.OfferKreshmoi("ETHZAR", 2, { from: secondAccount })
                 .then(result => {
-                    assert.equal(result.logs.length, 2, "expected 2 logs emitted");
+                    console.log("assert of first offer");
+                    assert.equal(result.logs.length, 2, "expected logs emitted");
 
                     assertEventLog(result.logs[0], "BountyCleared", "ETHZAR", 0, "Max block range exceeded. All previous bounty hunters have been erased. Bounty reset at current block.");
                     assertEventLog(result.logs[1], "KreshmoiOffered", secondAccount, "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
                 })
                 .then(kreshmoi => {
-                    assert.equal(kreshmoi.length, 0, "Expected zero successful kreshmoi");
+                    console.log("assert of kreshmoi after first offer");
+                    assert.equal(kreshmoi[0].length, 0, "Expected zero successful kreshmoi");
                     return PythiaInstance.OfferKreshmoi("ETHZAR", 10, { from: thirdAccount });
                 }).then(result => {
-
-                    assert.equal(result.logs.length, 1, "expected 2 logs emitted");
+                    console.log("assert of second offer");
+                    assert.equal(result.logs.length, 1, "expected logs emitted");
                     assertEventLog(result.logs[0], "KreshmoiOffered", thirdAccount, "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
                 }).then(kreshmoi => {
-                    assert.equal(kreshmoi.length, 0, "Expected zero successful kreshmoi");
+                    console.log("assert of kreshmoi after second offer");
+                    assert.equal(kreshmoi[0].length, 0, "Expected zero successful kreshmoi");
+                    console.log("fourthAccount: "+fourthAccount);
                     return PythiaInstance.OfferKreshmoi("ETHZAR", 4, { from: fourthAccount });
                 }).then(result => {
-
-                    assert.equal(result.logs.length, 1, "expected 2 logs emitted");
+                    console.log("assert of third offer");
+                    assert.equal(result.logs.length, 1, "expected logs emitted");
                     assertEventLog(result.logs[0], "KreshmoiOffered", fourthAccount, "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
                 }).then(kreshmoi => {
-                    assert.equal(kreshmoi.length, 0, "Expected zero successful kreshmoi");
+                    console.log("assert of kreshmoi third second offer");
+                    assert.equal(kreshmoi[0].length, 0, "Expected zero successful kreshmoi");
                     return PythiaInstance.OfferKreshmoi("ETHZAR", 7, { from: fifthAccount });
                 }).then(result => {
-                    assert.equal(result.logs.length, 1, "expected 2 logs emitted");
+                    console.log("assert of final offer");
+                    assert.equal(result.logs.length, 2, "expected logs emitted");
                     assertEventLog(result.logs[0], "KreshmoiOffered", fifthAccount, "ETHZAR");
+                    assertEventLog(result.logs[1], "ProphecyDelivered", "ETHZAR");
                     return PythiaInstance.GetKreshmoi.call("ETHZAR");
                 }).then(kreshmoi => {
                     console.log("expecting a kreshmoi");
-                    assert.equal(kreshmoi.length, 1, "Expected a successful kreshmoi");
-                    assertKreshmoi(kreshmoi[0], 5.75);
+                    console.log(JSON.stringify(kreshmoi));
+                    assert.equal(kreshmoi[0].length, 1, "Expected a successful kreshmoi");
+                    console.log(JSON.stringify(kreshmoi[0]));
+                    console.log(JSON.stringify(kreshmoi[1][0]));
+                   
+                    assert.equal(kreshmoi[0][0], "525");
+                    assert.equal(kreshmoi[1][0], "2");
                     return PythiaInstance.GetBountyReward.call({ from: secondAccount });
 
                     //assert second account was paid
                 }).then(reward => {
+                    console.log("Beggining to assert collection");
                     assert.equal(reward.toNumber, 100);
                     return PythiaInstance.collectBountyReward({ from: secondAccount, gas: "21000000000" });
                 }).then(result => {
