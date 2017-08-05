@@ -9,9 +9,11 @@ pragma solidity ^0.4.11;
 //TODO: make a withdrawal function
 //TODO: Implement GetBounty with datafeed and decimla places
 //TODO: change post bounty to have value adjusted for decimal places
+//TODO: check how many pythia we can tolerate before gas becomes a problem
 /*Domain language: Post bounty, OfferKreshmoi, Reward bounty, 
 Collect bounty reward, Successful kreshmoi
 */
+//TODO: maybe offer a bool (or overload) on OfferKreshmoi for only latest to save gas
 import "./StringUtils.sol";
 import "./PythiaBase.sol";
 
@@ -93,7 +95,7 @@ contract Pythia is PythiaBase{
         Bounty memory bounty = Bounty({
             maxBlockRange:maxBlockRange,
             maxValueRange:maxValueRange,
-            weiRewardPerOracle:msg.value/requiredSampleSize,
+            szaboRewardPerOracle:msg.value/requiredSampleSize,
             requiredSampleSize:requiredSampleSize,
             decimalPlaces:decimalPlaces,
             predictions: new int64[](requiredSampleSize),
@@ -104,7 +106,7 @@ contract Pythia is PythiaBase{
 
         if(openBounties[datafeed].length>20){
             address refundAddress = openBounties[datafeed][0].poster;
-            uint refund = openBounties[datafeed][0].weiRewardPerOracle*openBounties[datafeed][0].requiredSampleSize;
+            uint refund = openBounties[datafeed][0].szaboRewardPerOracle*openBounties[datafeed][0].requiredSampleSize;
             refundsForUnclaimedBounties[refundAddress]+=refund*10/9; //spam prevention penalty
 
             for(uint i =0;i<openBounties[datafeed].length-1;i++){
@@ -116,11 +118,18 @@ contract Pythia is PythiaBase{
         else
            openBounties[datafeed].push(bounty);
 
-        BountyPosted (msg.sender,datafeed,bounty.weiRewardPerOracle); 
+        BountyPosted (msg.sender,datafeed,bounty.szaboRewardPerOracle); 
     }
     
     function GetBountyReward() returns (uint){
         return rewardForSuccessfulProphecies[msg.sender];
+    }
+
+    function CollectBountyReward() {
+        uint reward = GetBountyReward();
+        rewardForSuccessfulProphecies[msg.sender] =0;
+
+        msg.sender.transfer(reward * 1000000);
     }
 
     function OfferKreshmoi(string datafeed, int64 value){
@@ -136,10 +145,10 @@ contract Pythia is PythiaBase{
             }
 
             int128[] memory range = new int128[](3);//0 = smallest,1 = largest,2 = average value
-            if(openBounties[datafeed][i].predictions.length>0)
+            if(bounties[i].predictions.length>0)
             {
-                range[0] = openBounties[datafeed][i].predictions[0];
-                range[1] = openBounties[datafeed][i].predictions[0];
+                range[0] = bounties[i].predictions[0];
+                range[1] = bounties[i].predictions[0];
             }
             else
             {
@@ -147,18 +156,18 @@ contract Pythia is PythiaBase{
                 range[1] = 0;    
             }
       
-            for(uint j =1;j<openBounties[datafeed][i].predictions.length;j++){
-                range[2] += openBounties[datafeed][i].predictions[j];
-                if(range[1]<openBounties[datafeed][i].predictions[j])
-                    range[1] = openBounties[datafeed][i].predictions[j];
-                if(range[0]>openBounties[datafeed][i].predictions[j])
-                       range[0] = openBounties[datafeed][i].predictions[j];
+            for(uint j =1;j<bounties[i].predictions.length;j++){
+                range[2] += bounties[i].predictions[j];
+                if(range[1]<bounties[i].predictions[j])
+                    range[1] = bounties[i].predictions[j];
+                if(range[0]>bounties[i].predictions[j])
+                       range[0] = bounties[i].predictions[j];
             }
        
             if(value>range[1])
                 range[1]= value;
          
-            if(uint(range[1]-range[0])>openBounties[datafeed][i].maxValueRange)
+            if(uint(range[1]-range[0])>bounties[i].maxValueRange)
             {
                 ClearBounty(datafeed,i,"The kreshmoi offered exceeded the maximum allowable range for this bounty. All previous bounty hunters have been erased. Bounty reset at current block.");
             }
@@ -183,6 +192,12 @@ contract Pythia is PythiaBase{
                     bountyPoster:openBounties[datafeed][i].poster
                 }));
                 
+                 address[] memory oracles = bounties[i].oracles;
+                 uint reward = bounties[i].szaboRewardPerOracle;
+                 for(j =0;j<oracles.length;j++){
+                     rewardForSuccessfulProphecies[oracles[j]] += reward;
+                 }
+
                 delete openBounties[datafeed][i];
                 for(j= i;j<openBounties[datafeed].length-1;j++){
                     openBounties[datafeed][j] = openBounties[datafeed][j+1];
@@ -243,6 +258,7 @@ contract Pythia is PythiaBase{
         }
         return false;
     }
+
     event Debugging(string message);
     event DebuggingUINT(string message,uint additional);
     event BountyPostFailed(string datafeed, address from, string reason);

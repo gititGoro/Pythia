@@ -32,7 +32,7 @@ contract PythiaBase is AccessRestriction{
     struct Bounty{
         uint16 maxBlockRange;
         uint earliestBlock;
-        uint weiRewardPerOracle;
+        uint szaboRewardPerOracle;
         uint8 requiredSampleSize;
         uint maxValueRange;
         address[] oracles;
