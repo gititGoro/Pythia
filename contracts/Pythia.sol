@@ -95,7 +95,7 @@ contract Pythia is PythiaBase{
         Bounty memory bounty = Bounty({
             maxBlockRange:maxBlockRange,
             maxValueRange:maxValueRange,
-            szaboRewardPerOracle:msg.value/requiredSampleSize,
+            szaboRewardPerOracle:(msg.value/requiredSampleSize)/1 szabo,
             requiredSampleSize:requiredSampleSize,
             decimalPlaces:decimalPlaces,
             predictions: new int64[](requiredSampleSize),
@@ -122,14 +122,13 @@ contract Pythia is PythiaBase{
     }
     
     function GetBountyReward() returns (uint){
-        return rewardForSuccessfulProphecies[msg.sender];
+        return rewardForSuccessfulProphecies[msg.sender]*1 szabo;
     }
 
     function CollectBountyReward() {
         uint reward = GetBountyReward();
         rewardForSuccessfulProphecies[msg.sender] =0;
-
-        msg.sender.transfer(reward * 1000000);
+        msg.sender.transfer(reward);
     }
 
     function OfferKreshmoi(string datafeed, int64 value){
