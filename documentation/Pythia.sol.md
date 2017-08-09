@@ -1,4 +1,4 @@
-#Domain Language
+# Domain Language
 * Pythia
   - In Ancient Greece, a special class of oracle existed. Pythia consisted of groups of oracles offering predictions on common questions. The Pythia were far more accessible than individual oracles such as the Oracle of Delphi but were considered less accurate. 
   - The name is perfectly fitting for this decentralized oracle smart contract for 2 reasons:
@@ -13,7 +13,7 @@
 * Oracle
   - When the required number of hopefuls offer data in the required window of time within the required margin of error, they are all rewarded ether and are classified as oracles for that datafeed. No special privileges exist going forward, other than an ego boost and an increased ether balance.
 
-#Functions
+# Functions
 * **SetDescription**(datafeed, description) *payable transaction*
   - sets or replaces the existing description for the datafeed provided you pay twice what the previous setter paid.
 * **GetDatafeedNameChangeCost**(datafeed) *call*
