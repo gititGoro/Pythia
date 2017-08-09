@@ -8,12 +8,11 @@ pragma solidity ^0.4.11;
 //TODO: add modifier to allow owner to disable the entire contract in case I want to launch a newer version.
 //TODO: make a withdrawal function
 //TODO: Implement GetBounty with datafeed and decimla places
-//TODO: change post bounty to have value adjusted for decimal places
 //TODO: check how many pythia we can tolerate before gas becomes a problem
 /*Domain language: Post bounty, OfferKreshmoi, Reward bounty, 
 Collect bounty reward, Successful kreshmoi
 */
-//TODO: maybe offer a bool (or overload) on OfferKreshmoi for only latest to save gas
+//TODO: maybe offer a bool or int (or overload) on OfferKreshmoi for only latest to save gas
 import "./StringUtils.sol";
 import "./PythiaBase.sol";
 
@@ -72,6 +71,7 @@ contract Pythia is PythiaBase{
     function GetDescriptionByIndex(uint index) returns (string){
         if(index<0 || index > datafeedNames.length){
          Debugging("Index out of bounds");
+         return "ERROR: INDEX OUT OF BOUNDS";
         }
         return datafeedNames[index];
     }
@@ -131,8 +131,8 @@ contract Pythia is PythiaBase{
         msg.sender.transfer(reward);
     }
 
-    function OfferKreshmoi(string datafeed, int64 value){
-
+    function OfferKreshmoi(string datafeed, int64 value, uint8 decimalPlaces){//TODO: limiting factor on number of open bounties to participate in
+            //TODO: implement unused decimalPlaces to adjust for each kreshmoi. Maybe if decimalPlaces don't match, continue
         Bounty [] bounties = openBounties[datafeed];
 
         for( uint i =0;i<bounties.length;i++){
@@ -169,6 +169,14 @@ contract Pythia is PythiaBase{
             if(uint(range[1]-range[0])>bounties[i].maxValueRange)
             {
                 ClearBounty(datafeed,i,"The kreshmoi offered exceeded the maximum allowable range for this bounty. All previous bounty hunters have been erased. Bounty reset at current block.");
+            }
+
+            for(j=0;j<openBounties[datafeed][i].oracles.length;j++){
+                if(openBounties[datafeed][i].oracles[j]==msg.sender)
+                {
+                     KreshmoiOfferFailed (msg.sender, datafeed, "oracle cannot post 2 predictions for same bounty");
+                     continue;
+                }
             }
 
             openBounties[datafeed][i].predictions.push(value);
@@ -264,5 +272,6 @@ contract Pythia is PythiaBase{
     event BountyCleared(string datafeed, uint index, string reason);
     event BountyPosted (address from, string datafeed, uint rewardPerOracle);
     event KreshmoiOffered (address from, string datafeed);
+    event KreshmoiOfferFailed (address from, string datafeed, string reason);
     event ProphecyDelivered (string datafeed);
 }
