@@ -4,10 +4,10 @@
   - The name is perfectly fitting for this decentralized oracle smart contract for 2 reasons:
     1. Each prediction requires many participants to form a consenus.
     2. Although game theory and behavioural economics implies increased accuracy with increased participation, accuracy is not guaranteed
-  - Note that popular feeds such as ETHBTC and BTCUSD will attract enough bounties and oracles that we expect accuracy to match any centralized oracles but feeds for less popular feeds such as the zimbabwean dollar vs the botswana pula might require a great pinch of salt and consist of very stale data.
+  - Note that popular feeds such as ETHBTC and BTCUSD will attract enough bounties and oracles that we expect accuracy to match any centralized oracles but data for less popular feeds such as the zimbabwean dollar vs the botswana pula might require a great pinch of salt and consist of very stale data.
   - For this reason, bounties constitute data demand and predictions constitute data supply.
 * Kreshmoi
-  - In ancient Greece, an utterance by an oracle is called a Kreshmoi. For our domain, a prediction is only considered "by an oracle" if certain conditions are met. Therefore, a Kreshmoi refers to a consensus of successful predictions
+  - In ancient Greece, an utterance by an oracle was called a Kreshmoi. For our domain, a prediction is only considered "by an oracle" if certain conditions are met. Therefore, a Kreshmoi refers to a consensus of successful predictions.
 * Hopeful
   - A bounty can only be won if enough participants offer a consensus of data. Only when a bounty is successful, is each participant considered a true oracle. Until then, they are only acolytes, peons... hopefuls.
 * Oracle

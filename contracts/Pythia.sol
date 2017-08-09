@@ -13,6 +13,8 @@ pragma solidity ^0.4.11;
 Collect bounty reward, Successful kreshmoi
 */
 //TODO: maybe offer a bool or int (or overload) on OfferKreshmoi for only latest to save gas
+//TODO: implement a GetBountyReward to check the reward offered on each bounty. 
+
 import "./StringUtils.sol";
 import "./PythiaBase.sol";
 
@@ -121,11 +123,11 @@ contract Pythia is PythiaBase{
         BountyPosted (msg.sender,datafeed,bounty.szaboRewardPerOracle); 
     }
     
-    function GetBountyReward() returns (uint){
+    function GetBountyReward() returns (uint){ //TODO: rename GetOracleReward
         return rewardForSuccessfulProphecies[msg.sender]*1 szabo;
     }
 
-    function CollectBountyReward() {
+    function CollectBountyReward() { //TODO: rename CollectOracleReward
         uint reward = GetBountyReward();
         rewardForSuccessfulProphecies[msg.sender] =0;
         msg.sender.transfer(reward);
