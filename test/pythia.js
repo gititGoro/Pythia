@@ -14,8 +14,9 @@ contract('Pythia', function (accounts) {
         var fourthAccount = accounts[3];
         var fifthAccount = accounts[4];
         var accountBalances = [0, 0, 0, 0];
-        var gasForOfferKreshmoi = "16777215";
+        var gasForOfferKreshmoi = 6000000;
         var gasForCollectReward = "1000000";
+        var gasForPostBounty = "6000000";
         var fixtureBounty = {
             maxBlockRange: 1000,
             szaboRewardPerOracle: 10000000,
@@ -43,15 +44,28 @@ contract('Pythia', function (accounts) {
                     return getBalancePromise(fifthAccount);
                 }).then(initialBalance => {
                     accountBalances[3] = convertToEther(initialBalance);
-                    return PythiaInstance.PostBounty("ETHZAR", fixtureBounty.maxBlockRange,
-                        fixtureBounty.maxValueRange, fixtureBounty.RequiredSampleSize, fixtureBounty.decimalPlaces,
-                        { from: firstAccount, value: "40000000000000000000" });
                 });
         });
 
-        it("respond to bounty and assert", () => {
+        it("validates bounty, claims refund and then posts", () => {
+            //(string datafeed,uint8 requiredSampleSize,uint16 maxBlockRange,uint maxValueRange,uint8 decimalPlaces) payable{
+            return PythiaInstance.GeneratePostBountyValidationTicket("ETHZAR", fixtureBounty.RequiredSampleSize,
+                fixtureBounty.maxBlockRange, fixtureBounty.maxValueRange,
+                fixtureBounty.decimalPlaces,
+                { from: firstAccount, value: "40000000000000000000", gas: gasForPostBounty })
+                .then(result => {
+                    return PythiaInstance.ClaimRefundsDue();
+                })
+                .then(result => {
+                    return PythiaInstance.PostBounty({ from: firstAccount, value: "40000000000000000000", gas: gasForPostBounty });
+                });
+        });
+
+        /*it("respond to bounty and assert", () => {
+            
             return PythiaInstance.OfferKreshmoi("ETHZAR", 2, { from: secondAccount, gas: gasForOfferKreshmoi })
                 .then(result => {
+                    console.log("asserting offer kreshmoi");
                     assert.equal(result.logs.length, 2, "expected logs emitted");
 
                     assertEventLog(result.logs[0], "BountyCleared", "ETHZAR", 0, "Max block range exceeded. All previous bounty hunters have been erased. Bounty reset at current block.");
@@ -129,7 +143,7 @@ contract('Pythia', function (accounts) {
                 }).then(balance => {
                     assert.isAtLeast(convertToEther(balance), accountBalances[3] + 9);
                 });
-        });
+        });*/
 
     });
 

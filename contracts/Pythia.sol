@@ -12,7 +12,6 @@ pragma solidity ^0.4.11;
 /*Domain language: Post bounty, OfferKreshmoi, Reward bounty, 
 Collect bounty reward, Successful kreshmoi
 */
-//TODO: maybe offer a bool or int (or overload) on OfferKreshmoi for only latest to save gas
 //TODO: implement a GetBountyReward to check the reward offered on each bounty. 
 
 import "./StringUtils.sol";
@@ -23,12 +22,12 @@ contract Pythia is PythiaBase{
     mapping (address => uint) rewardForSuccessfulProphecies; //stores the ether value of each successful kreshmoi. And yes, you can forget about reentrancy attacks.
     mapping (string => Kreshmoi[]) successfulKreshmoi; //key is USDETH or CPIXZA for instance
     mapping (string => Bounty[]) openBounties; 
-    mapping (address => uint) refundsForUnclaimedBounties;
+    mapping (address => uint) refundsForFailedBounties;
     mapping (address => uint) donations;
     mapping (string => string) datafeedDescriptions;
     mapping (string => uint) datafeedChangeCost;
     string [] datafeedNames;
-   
+    mapping (address => PostBountyDetails ) validationTickets;
     function Pythia(){
         
     }
@@ -78,145 +77,189 @@ contract Pythia is PythiaBase{
         return datafeedNames[index];
     }
 
-    function PostBounty(string datafeed, uint16 maxBlockRange,uint maxValueRange,uint8 requiredSampleSize,uint8 decimalPlaces) payable{
-
-        if(msg.value/requiredSampleSize<1) {
-            BountyPostFailed(datafeed,msg.sender,"ether reward too small");
-            return;
+    function GeneratePostBountyValidationTicket(string datafeed,uint8 requiredSampleSize,uint16 maxBlockRange,uint maxValueRange,uint8 decimalPlaces) payable{
+        bool validationSuccess = true;
+         if(msg.value/requiredSampleSize<1) {
+            BountyValidationCheckFailed(datafeed,msg.sender,"ether reward too small");
+            validationSuccess=false;
         }
 
         if(requiredSampleSize<2) {
-             BountyPostFailed(datafeed,msg.sender,"At least 2 predictions for an oracle to be considered a pythia");
-             return;
+             BountyValidationCheckFailed(datafeed,msg.sender,"At least 2 predictions for an oracle to be considered a pythia");
+             validationSuccess = false;
         }
 
         if(ValidateDataFeedFails(datafeed,msg.sender)){
-            return;
+            validationSuccess=false;
         }
 
-        Bounty memory bounty = Bounty({
+         if(openBounties[datafeed].length>10){
+            BountListFull(datafeed);
+            validationSuccess=false;
+        }
+
+        if(validationSuccess){
+            validationTickets[msg.sender] = PostBountyDetails({datafeed:datafeed, 
+            value:msg.value,
+            sampleSize:requiredSampleSize,
             maxBlockRange:maxBlockRange,
             maxValueRange:maxValueRange,
-            szaboRewardPerOracle:(msg.value/requiredSampleSize)/1 szabo,
-            requiredSampleSize:requiredSampleSize,
             decimalPlaces:decimalPlaces,
-            predictions: new int64[](requiredSampleSize),
-            oracles: new address [](requiredSampleSize),
-            earliestBlock:0,
-            poster: msg.sender
-        });
+            fresh:true});
+        }
 
-        if(openBounties[datafeed].length>20){
+        refundsForFailedBounties[msg.sender]+=msg.value;
+        ValidationTicketGenerated(msg.sender);
+    }
+
+    function PushOldBountiesOffCliff(string datafeed){
+
+         if(openBounties[datafeed].length>0){
             address refundAddress = openBounties[datafeed][0].poster;
             uint refund = openBounties[datafeed][0].szaboRewardPerOracle*openBounties[datafeed][0].requiredSampleSize;
-            refundsForUnclaimedBounties[refundAddress]+=refund*10/9; //spam prevention penalty
+            refundsForFailedBounties[refundAddress]+=refund*9/10; //spam prevention penalty
 
             for(uint i =0;i<openBounties[datafeed].length-1;i++){
                 openBounties[datafeed][i] = openBounties[datafeed][i+1];
             }
-            uint lastIndex = openBounties[datafeed].length-1;
-            openBounties[datafeed][lastIndex] = bounty;
+            delete openBounties[datafeed][openBounties[datafeed].length-1];
+            openBounties[datafeed].length--;
         }
-        else
-           openBounties[datafeed].push(bounty);
+    }
 
-        BountyPosted (msg.sender,datafeed,bounty.szaboRewardPerOracle); 
+    function PostBounty() payable{
+        PostBountyDetails memory validationObject;
+        if(validationTickets[msg.sender].fresh) {
+                validationObject = validationTickets[msg.sender];
+                validationTickets[msg.sender].fresh= false;
+        } else if (msg.value!=validationTickets[msg.sender].value) {
+            InvalidBountyValidationTicket(msg.sender,validationTickets[msg.sender].datafeed);
+            refundsForFailedBounties[msg.sender]+=msg.value;
+            return;
+        }
+
+        Bounty memory bounty = Bounty({
+            maxBlockRange:validationObject.maxBlockRange,
+            maxValueRange:validationObject.maxValueRange,
+            szaboRewardPerOracle:(msg.value/validationObject.sampleSize)/1 szabo,
+            requiredSampleSize:validationObject.sampleSize,
+            decimalPlaces:validationObject.decimalPlaces,
+            predictions: new int64[](validationObject.sampleSize),
+            oracles: new address [](validationObject.sampleSize),
+            earliestBlock:0,
+            poster: msg.sender
+        });
+
+        openBounties[validationObject.datafeed].push(bounty);
+
+        BountyPosted (msg.sender,validationObject.datafeed,bounty.szaboRewardPerOracle); 
     }
     
-    function GetBountyReward() returns (uint){ //TODO: rename GetOracleReward
+    function GetOracleReward() returns (uint){ 
         return rewardForSuccessfulProphecies[msg.sender]*1 szabo;
     }
 
-    function CollectBountyReward() { //TODO: rename CollectOracleReward
-        uint reward = GetBountyReward();
+    function CollectOracleReward() { 
+        uint reward = GetOracleReward();
         rewardForSuccessfulProphecies[msg.sender] =0;
         msg.sender.transfer(reward);
     }
 
-    function OfferKreshmoi(string datafeed, int64 value, uint8 decimalPlaces){//TODO: limiting factor on number of open bounties to participate in
-            //TODO: implement unused decimalPlaces to adjust for each kreshmoi. Maybe if decimalPlaces don't match, continue
-        Bounty [] bounties = openBounties[datafeed];
+    function ClaimRefundsDue(){
+        uint refund = refundsForFailedBounties[msg.sender];
+        refundsForFailedBounties[msg.sender] = 0;
+        RefundProcessed(msg.sender);
+        msg.sender.transfer(refund);
+        
+    }
 
-        for( uint i =0;i<bounties.length;i++){
-            bool finalKreshmoi = bounties[i].predictions.length == bounties[i].requiredSampleSize-1;
+    function GetBounties(string datafeed) returns (uint8[] sampleSize,uint8[] decimalPlaces,uint[] rewardPerOracle){
+        for(uint i =0; i<openBounties[datafeed].length;i++){
+            sampleSize[i]=openBounties[datafeed][i].requiredSampleSize;
+            decimalPlaces[i]=openBounties[datafeed][i].decimalPlaces;
+            rewardPerOracle[i]=openBounties[datafeed][i].szaboRewardPerOracle;
+        }
+    }
 
-            if(bounties[i].earliestBlock==0 || block.number - uint(bounties[i].earliestBlock)>uint(bounties[i].maxBlockRange)) //reset stale bounties
+    function OfferKreshmoi(string datafeed, uint8 index, int64 value){//TODO: limiting factor on number of open bounties to participate in
+        Bounty bounty = openBounties[datafeed][index];
+
+            if(bounty.earliestBlock==0 || block.number - uint(bounty.earliestBlock)>uint(bounty.maxBlockRange)) //reset stale bounties
             {
-               ClearBounty(datafeed,i,"Max block range exceeded. All previous bounty hunters have been erased. Bounty reset at current block.");
+               ClearBounty(datafeed,index,"Max block registers exceeded. All previous bounty hunters have been erased. Bounty reset at current block.");
             }
 
-            int128[] memory range = new int128[](3);//0 = smallest,1 = largest,2 = average value
-            if(bounties[i].predictions.length>0)
+            int128[] memory registers = new int128[](4);//0 = smallest,1 = largest,2 = average value,3 = order of magnitude
+            if(bounty.predictions.length>0)
             {
-                range[0] = bounties[i].predictions[0];
-                range[1] = bounties[i].predictions[0];
+                registers[0] = bounty.predictions[0];
+                registers[1] = bounty.predictions[0];
             }
             else
             {
-                range[0] = 0;
-                range[1] = 0;    
+                registers[0] = 0;
+                registers[1] = 0;    
             }
       
-            for(uint j =1;j<bounties[i].predictions.length;j++){
-                range[2] += bounties[i].predictions[j];
-                if(range[1]<bounties[i].predictions[j])
-                    range[1] = bounties[i].predictions[j];
-                if(range[0]>bounties[i].predictions[j])
-                       range[0] = bounties[i].predictions[j];
+            for(uint j =1;j<bounty.predictions.length;j++){
+                registers[2] += bounty.predictions[j];
+                if(registers[1]<bounty.predictions[j])
+                    registers[1] = bounty.predictions[j];
+                if(registers[0]>bounty.predictions[j])
+                       registers[0] = bounty.predictions[j];
             }
        
-            if(value>range[1])
-                range[1]= value;
+            if(value>registers[1])
+                registers[1]= value;
          
-            if(uint(range[1]-range[0])>bounties[i].maxValueRange)
+            if(uint(registers[1]-registers[0])>bounty.maxValueRange)
             {
-                ClearBounty(datafeed,i,"The kreshmoi offered exceeded the maximum allowable range for this bounty. All previous bounty hunters have been erased. Bounty reset at current block.");
+                ClearBounty(datafeed,index,"The kreshmoi offered exceeded the maximum allowable registers for this bounty. All previous bounty hunters have been erased. Bounty reset at current block.");
             }
 
-            for(j=0;j<openBounties[datafeed][i].oracles.length;j++){
-                if(openBounties[datafeed][i].oracles[j]==msg.sender)
+            for(j=0;j<openBounties[datafeed][index].oracles.length;j++){
+                if(openBounties[datafeed][index].oracles[j]==msg.sender)
                 {
                      KreshmoiOfferFailed (msg.sender, datafeed, "oracle cannot post 2 predictions for same bounty");
-                     continue;
+                     return;
                 }
             }
 
-            openBounties[datafeed][i].predictions.push(value);
-            openBounties[datafeed][i].oracles.push(msg.sender);
+            openBounties[datafeed][index].predictions.push(value);
+            openBounties[datafeed][index].oracles.push(msg.sender);
             
-            if(finalKreshmoi){
-                range[2] += value;
-                int128 orderOfMagnitude = 1;
-                for(j =0;j<openBounties[datafeed][i].decimalPlaces;j++){
-                    orderOfMagnitude*=10;
+            if(openBounties[datafeed][index].predictions.length == bounty.requiredSampleSize){
+                registers[2] += value;
+                registers[3] = 1;
+                for(j =0;j<openBounties[datafeed][index].decimalPlaces;j++){
+                     registers[3]*=10;
                 }
-                range[2] *= orderOfMagnitude;
-                range[2] /= openBounties[datafeed][i].requiredSampleSize;
+                registers[2] *=  registers[3];
+                registers[2] /= openBounties[datafeed][index].requiredSampleSize;
                 successfulKreshmoi[datafeed].push(Kreshmoi({
-                    blockRange: uint16(block.number - openBounties[datafeed][i].earliestBlock),
-                    decimalPlaces:openBounties[datafeed][i].decimalPlaces,
-                    value: int64(range[2]),
-                    sampleSize:openBounties[datafeed][i].requiredSampleSize,
-                    valueRange:uint(range[1]-range[0]),
-                    bountyPoster:openBounties[datafeed][i].poster
+                    blockRange: uint16(block.number - openBounties[datafeed][index].earliestBlock),
+                    decimalPlaces:openBounties[datafeed][index].decimalPlaces,
+                    value: int64(registers[2]),
+                    sampleSize:openBounties[datafeed][index].requiredSampleSize,
+                    valueRange:uint(registers[1]-registers[0]),
+                    bountyPoster:openBounties[datafeed][index].poster
                 }));
                 
-                 address[] memory oracles = bounties[i].oracles;
-                 uint reward = bounties[i].szaboRewardPerOracle;
+                 address[] memory oracles = bounty.oracles;
+                 uint reward = bounty.szaboRewardPerOracle;
                  for(j =0;j<oracles.length;j++){
                      rewardForSuccessfulProphecies[oracles[j]] += reward;
                  }
 
-                delete openBounties[datafeed][i];
-                for(j= i;j<openBounties[datafeed].length-1;j++){
+                delete openBounties[datafeed][index];
+                for(j= index;j<openBounties[datafeed].length-1;j++){
                     openBounties[datafeed][j] = openBounties[datafeed][j+1];
                 }
                 KreshmoiOffered(msg.sender,datafeed);
                 ProphecyDelivered(datafeed);
-                continue;
+                return;
             }
             KreshmoiOffered(msg.sender,datafeed);
-        }
     }
 
     function GetKreshmoi(string datafeed) returns (int64[],uint8[]) {
@@ -240,12 +283,12 @@ contract Pythia is PythiaBase{
     function ValidateDataFeedFails(string datafeed, address sender) internal returns(bool){
        bytes memory chararray = bytes(datafeed);
         if(chararray.length>10) {
-            BountyPostFailed( datafeed,  sender, "datafeed name must contain at most 10 characters");
+            BountyValidationCheckFailed( datafeed,  sender, "datafeed name must contain at most 10 characters");
             return true;
         }
 
         if(chararray.length<3) {
-            BountyPostFailed( datafeed,  sender, "datafeed name must contain at least 3 characters");
+            BountyValidationCheckFailed( datafeed,  sender, "datafeed name must contain at least 3 characters");
             return true;
         }
 
@@ -261,7 +304,7 @@ contract Pythia is PythiaBase{
                     existsInValidSet= true;
             }
             if(!existsInValidSet){
-                BountyPostFailed(datafeed, sender,"Characters must be uppercase alphanumeric.");
+                BountyValidationCheckFailed(datafeed, sender,"Characters must be uppercase alphanumeric.");
                 return true;
             }
         }
@@ -270,10 +313,14 @@ contract Pythia is PythiaBase{
 
     event Debugging(string message);
     event DebuggingUINT(string message,uint additional);
-    event BountyPostFailed(string datafeed, address from, string reason);
+    event BountyValidationCheckFailed(string datafeed, address from, string reason);
+    event InvalidBountyValidationTicket(address sender, string datafeed);
+    event BountListFull(string datafeed);
     event BountyCleared(string datafeed, uint index, string reason);
     event BountyPosted (address from, string datafeed, uint rewardPerOracle);
     event KreshmoiOffered (address from, string datafeed);
     event KreshmoiOfferFailed (address from, string datafeed, string reason);
     event ProphecyDelivered (string datafeed);
+    event RefundProcessed(address collector);
+    event ValidationTicketGenerated(address bountyPost);
 }

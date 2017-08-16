@@ -32,9 +32,9 @@
   - decimalPlaces: at the time of publishing, solidity has no concept for floating point storage, even though it can perform floating point arithmetic. For this reason, all predictions are ints and are adjusted by the bounty's specified decimal places. This gives the bounty placer choice over precision
 * **OfferKreshmoi** (datafeed, value) *transaction*
   - hopefuls can offer predictions for a given datafeed and potentially earn ether by becoming oracles
-* **GetBountyReward** *call* 
+* **GetOracleReward** *call* 
   - Check ether balance of payouts for oracles.
-* **CollectedBountyReward** *transaction*
+* **CollectOracleReward** *transaction*
   - Withdraw ether to oracle
 * **GetKreshmoi** (datafeed) *call*
   - Returns the list of all predictions on this datafeed as well the precision for each one. Ordered by time desc

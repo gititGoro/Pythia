@@ -10,5 +10,5 @@ module.exports = function(deployer) {
   deployer.link(AccessRestriction, PythiaBase);
   deployer.link(PythiaBase, Pythia);
   deployer.link(StringUtils, Pythia);
-  deployer.deploy(Pythia);
+  deployer.deploy(Pythia, {gas: 6000000});
 };
