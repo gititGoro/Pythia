@@ -28,23 +28,20 @@ contract('Pythia', function (accounts) {
         before(() => {
             return Pythia.deployed().then(instance => {
                 PythiaInstance = instance;
+            }).then(()=>{
+                return getBalancePromise(secondAccount);
+            }).then(initialBalance => {
+                accountBalances[0] = convertToEther(initialBalance);
+                return getBalancePromise(thirdAccount);
+            }).then(initialBalance => {
+                accountBalances[1] = convertToEther(initialBalance);
+                return getBalancePromise(fourthAccount);
+            }).then(initialBalance => {
+                accountBalances[2] = convertToEther(initialBalance);
+                return getBalancePromise(fifthAccount);
+            }).then(initialBalance => {
+                accountBalances[3] = convertToEther(initialBalance);
             });
-        });
-
-        it("Checking balances and then post bounty", () => {
-            return getBalancePromise(secondAccount)
-                .then(initialBalance => {
-                    accountBalances[0] = convertToEther(initialBalance);
-                    return getBalancePromise(thirdAccount);
-                }).then(initialBalance => {
-                    accountBalances[1] = convertToEther(initialBalance);
-                    return getBalancePromise(fourthAccount);
-                }).then(initialBalance => {
-                    accountBalances[2] = convertToEther(initialBalance);
-                    return getBalancePromise(fifthAccount);
-                }).then(initialBalance => {
-                    accountBalances[3] = convertToEther(initialBalance);
-                });
         });
 
         it("validates bounty, claims refund and then posts", () => {
