@@ -36,6 +36,83 @@ contract Pythia is PythiaBase {
         donations[msg.sender] = msg.value;
     }
 
+    //passive functions START
+    mapping (address => mapping (address => uint8)) winningStreak;
+    mapping (string => PassiveKreshmoi[]) predictions;
+    mapping (address => mapping (string => Prophecy[])) prophecies;
+
+    function rewardPythia(string datafeed, uint8 requiredSampleSize,uint16 maxBlockRange,int128 maxValueRange,uint8 decimalPlaces, uint8 minimumWinningStreak) payable {
+        int128[] memory registers = new int128[](4); //0 = lower range, 1 = upper range, 2 = average,3 = reward
+        registers[3] = int128(msg.value / requiredSampleSize);
+        if (registers[3]<=0) {
+            ScanPredictionsFailed(msg.sender, "ether reward too small");
+            refundsForFailedBounties[msg.sender] += msg.value;
+            return;
+        }
+
+        uint predictionCount = predictions[datafeed].length;
+
+        if (predictionCount >= requiredSampleSize && predictionCount>0) {
+            registers[0] = predictions[datafeed][predictionCount-1].prediction;
+            registers[1] = predictions[datafeed][predictionCount-1].prediction;    
+        }else {
+            ScanPredictionsFailed(msg.sender, "too few predictions");
+            refundsForFailedBounties[msg.sender] += msg.value;
+            return;
+        }
+
+        address[] memory winners = new address[](requiredSampleSize);
+
+        for (uint i = predictionCount-1;i >= 0 && requiredSampleSize>0 ;i--) {
+            if (winningStreak[msg.sender][predictions[datafeed][i].oracle]<minimumWinningStreak)
+                continue;
+            
+            if (predictions[datafeed][i].blockNumber < block.number - maxBlockRange)
+                continue;
+
+            if (predictions[datafeed][i].decimalPlaces != decimalPlaces)
+                continue;
+
+            if (predictions[datafeed][i].prediction<registers[0]) {
+                if (registers[1] - predictions[datafeed][i].prediction>maxValueRange) {
+                    PredictionNotInAcceptableRange(predictions[datafeed][i].oracle, msg.sender);
+                    continue;
+                }
+                registers[0] = predictions[datafeed][i].prediction;
+            }else if (predictions[datafeed][i].prediction>registers[1]) {
+                if (predictions[datafeed][i].prediction>maxValueRange - registers[0]) {
+                    PredictionNotInAcceptableRange(predictions[datafeed][i].oracle, msg.sender);
+                    continue;
+                }
+                registers[1] = predictions[datafeed][i].prediction;
+            }
+            registers[2] += predictions[datafeed][i].prediction;
+            requiredSampleSize--;
+            winners[requiredSampleSize] = predictions[datafeed][i].oracle;
+        }
+
+        if (requiredSampleSize>0) {
+            ScanPredictionsFailed(msg.sender, "required sample size not met");
+            refundsForFailedBounties[msg.sender] += msg.value;
+            return;
+        }
+
+        for (i = 0;i<winners.length;i++) {
+            winningStreak[msg.sender][winners[i]]++;
+            rewardForSuccessfulProphecies[winners[i]] += uint(registers[3]);
+        }
+        Prophecy memory success = Prophecy({
+            sumOfPredictions: registers[2],
+            decimalPlaces:decimalPlaces,
+            sampleSize:uint8(winners.length)
+        });
+        prophecies[msg.sender][datafeed].push(success);
+    }
+
+    
+    //TODO: implement PassiveOfferKreshmoi
+    //TODO: implement scanProphecies
+    //passive functions END
     function setDescription(string datafeed, string description) payable {
         uint index = 0;
         for (uint i = 0; i < datafeedNames.length; i++) {
@@ -314,4 +391,8 @@ contract Pythia is PythiaBase {
     event ProphecyDelivered (string datafeed);
     event RefundProcessed(address collector);
     event ValidationTicketGenerated(address bountyPost);
+
+    //passive
+    event PredictionNotInAcceptableRange (address oracle, address inquirer);
+    event ScanPredictionsFailed (address inquirer, string reason);
 }
