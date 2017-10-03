@@ -28,6 +28,7 @@ contract PythiaBase is AccessRestriction {
         int128 sumOfPredictions;
         uint8 decimalPlaces;
         uint8 sampleSize;
+        uint blockNumber;
     }
     //When someone wants a kreshmoi on a particular datafeed, they'll issue
     //a bounty on that datafeed specifying how many people must achieve consensus

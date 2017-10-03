@@ -26,12 +26,14 @@ contract('Pythia', function (accounts) {
         };
 
         before(() => {
-            return Pythia.deployed().then(instance => {
+            console.log("anything");
+            Pythia.deployed().then(instance => {
                 PythiaInstance = instance;
             }).then(() => {
                 return getBalancePromise(secondAccount);
             }).then(initialBalance => {
                 accountBalances[0] = convertToEther(initialBalance);
+                console.log("balance "+initialBalance);
                 return getBalancePromise(thirdAccount);
             }).then(initialBalance => {
                 accountBalances[1] = convertToEther(initialBalance);
@@ -41,106 +43,117 @@ contract('Pythia', function (accounts) {
                 return getBalancePromise(fifthAccount);
             }).then(initialBalance => {
                 accountBalances[3] = convertToEther(initialBalance);
-            });
-        });
 
-        it("validates bounty, claims refund and then posts", () => {
-            //(string datafeed,uint8 requiredSampleSize,uint16 maxBlockRange,uint maxValueRange,uint8 decimalPlaces) payable{
-            return PythiaInstance.generatePostBountyValidationTicket("ETHZAR", fixtureBounty.RequiredSampleSize,
-                fixtureBounty.maxBlockRange, fixtureBounty.maxValueRange,
-                fixtureBounty.decimalPlaces,
-                { from: firstAccount, value: "40000000000000000000", gas: gasForPostBounty })
-                .then(result => {
-                    return PythiaInstance.claimRefundsDue({ from: firstAccount });
-                })
-                .then(result => {
-                    return PythiaInstance.postBounty({ from: firstAccount, value: "40000000000000000000", gas: gasForPostBounty });
+                return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 12, 2, { from: secondAccount })
+            }).then(result => {
+                    console.log("result of passiveOfferKreshmoi" + JSON.stringify(result));
+                    //TODO: assert some of this stuff
                 });
         });
 
-        it("respond to bounty and assert", () => {
 
-            return PythiaInstance.offerKreshmoi("ETHZAR", 0, 2, { from: secondAccount, gas: gasForofferKreshmoi })
-                .then(result => {
-                    console.log("asserting offer kreshmoi");
-                    assert.equal(result.logs.length, 2, "expected logs emitted");
+        it("reward successful pythia and scan prophecies", () => {
 
-                    assertEventLog(result.logs[0], "BountyCleared", "ETHZAR", 0, "Max block range exceeded. All previous bounty hunters have been erased. Bounty reset at current block.");
-                    assertEventLog(result.logs[1], "KreshmoiOffered", secondAccount, "ETHZAR");
-                    return PythiaInstance.getKreshmoi.call("ETHZAR");
-                })
-                .then(kreshmoi => {
-                    assert.equal(kreshmoi[0].length, 0, "Expected zero successful kreshmoi");
-                    return PythiaInstance.offerKreshmoi("ETHZAR", 0, 10, { from: thirdAccount, gas: gasForofferKreshmoi });
-                }).then(result => {
-                    assert.equal(result.logs.length, 1, "expected logs emitted");
-                    assertEventLog(result.logs[0], "KreshmoiOffered", thirdAccount, "ETHZAR");
-                    return PythiaInstance.getKreshmoi.call("ETHZAR");
-                }).then(kreshmoi => {
-                    assert.equal(kreshmoi[0].length, 0, "Expected zero successful kreshmoi");
-                    return PythiaInstance.offerKreshmoi("ETHZAR", 0, 4, { from: fourthAccount, gas: gasForofferKreshmoi });
-                }).then(result => {
-                    assert.equal(result.logs.length, 1, "expected logs emitted");
-                    assertEventLog(result.logs[0], "KreshmoiOffered", fourthAccount, "ETHZAR");
-                    return PythiaInstance.getKreshmoi.call("ETHZAR");
-                }).then(kreshmoi => {
-                    assert.equal(kreshmoi[0].length, 0, "Expected zero successful kreshmoi");
-                    return PythiaInstance.offerKreshmoi("ETHZAR", 0, 7, { from: fifthAccount, gas: gasForofferKreshmoi });
-                }).then(result => {
-                    assert.equal(result.logs.length, 2, "expected logs emitted");
-                    assertEventLog(result.logs[0], "KreshmoiOffered", fifthAccount, "ETHZAR");
-                    assertEventLog(result.logs[1], "ProphecyDelivered", "ETHZAR");
-                    return PythiaInstance.getKreshmoi.call("ETHZAR");
-                }).then(kreshmoi => {
-                    assert.equal(kreshmoi[0].length, 1, "Expected a successful kreshmoi");
-                    assert.equal(kreshmoi[0][0].toNumber(), 525);
-                    assert.equal(kreshmoi[1][0].toNumber(), 2);
-                    return PythiaInstance.getBountyReward.call({ from: secondAccount });
-
-                    //assert second account was paid
-                }).then(reward => {
-                    var etherReward = convertToEther(reward);
-                    assert.equal(etherReward, 10);
-                    return PythiaInstance.collectBountyReward({ from: secondAccount, gas: gasForCollectReward });
-                }).then(result => {
-                    return getBalancePromise(secondAccount);
-                }).then(balance => {
-                    assert.isAtLeast(convertToEther(balance), accountBalances[0] + 9);//9 because some gas
-                    return PythiaInstance.getBountyReward.call({ from: thirdAccount });
-                })
-                //assert third account was paid    
-                .then(reward => {
-                    var etherReward = convertToEther(reward);
-                    assert.equal(etherReward, 10);
-                    return PythiaInstance.collectBountyReward({ from: thirdAccount, gas: gasForCollectReward });
-                }).then(result => {
-                    return getBalancePromise(thirdAccount);
-                }).then(balance => {
-                    assert.isAtLeast(convertToEther(balance), accountBalances[1] + 9);
-                    return PythiaInstance.getBountyReward.call({ from: fourthAccount });
-                })
-                //assert fourth account was paid
-                .then(reward => {
-                    var etherReward = convertToEther(reward);
-                    assert.equal(etherReward, 10);
-                    return PythiaInstance.collectBountyReward({ from: fourthAccount, gas: gasForCollectReward });
-                }).then(result => {
-                    return getBalancePromise(fourthAccount);
-                }).then(balance => {
-                    assert.isAtLeast(convertToEther(balance), accountBalances[2] + 9);
-                    return PythiaInstance.getBountyReward.call({ from: fifthAccount });
-                })
-                //assert fifth account was paid
-                .then(reward => {
-                    var etherReward = convertToEther(reward);
-                    assert.equal(etherReward, 10);
-                    return PythiaInstance.collectBountyReward({ from: fifthAccount, gas: gasForCollectReward });
-                }).then(result => {
-                    return getBalancePromise(fifthAccount);
-                }).then(balance => {
-                    assert.isAtLeast(convertToEther(balance), accountBalances[3] + 9);
-                });
         });
+
+
+        // it("validates bounty, claims refund and then posts", () => {
+        //     //(string datafeed,uint8 requiredSampleSize,uint16 maxBlockRange,uint maxValueRange,uint8 decimalPlaces) payable{
+        //     return PythiaInstance.generatePostBountyValidationTicket("ETHZAR", fixtureBounty.RequiredSampleSize,
+        //         fixtureBounty.maxBlockRange, fixtureBounty.maxValueRange,
+        //         fixtureBounty.decimalPlaces,
+        //         { from: firstAccount, value: "40000000000000000000", gas: gasForPostBounty })
+        //         .then(result => {
+        //             return PythiaInstance.claimRefundsDue({ from: firstAccount });
+        //         })
+        //         .then(result => {
+        //             return PythiaInstance.postBounty({ from: firstAccount, value: "40000000000000000000", gas: gasForPostBounty });
+        //         });
+        // });
+
+        // it("respond to bounty and assert", () => {
+
+        //     return PythiaInstance.offerKreshmoi("ETHZAR", 0, 2, { from: secondAccount, gas: gasForofferKreshmoi })
+        //         .then(result => {
+        //             console.log("asserting offer kreshmoi");
+        //             assert.equal(result.logs.length, 2, "expected logs emitted");
+
+        //             assertEventLog(result.logs[0], "BountyCleared", "ETHZAR", 0, "Max block range exceeded. All previous bounty hunters have been erased. Bounty reset at current block.");
+        //             assertEventLog(result.logs[1], "KreshmoiOffered", secondAccount, "ETHZAR");
+        //             return PythiaInstance.getKreshmoi.call("ETHZAR");
+        //         })
+        //         .then(kreshmoi => {
+        //             assert.equal(kreshmoi[0].length, 0, "Expected zero successful kreshmoi");
+        //             return PythiaInstance.offerKreshmoi("ETHZAR", 0, 10, { from: thirdAccount, gas: gasForofferKreshmoi });
+        //         }).then(result => {
+        //             assert.equal(result.logs.length, 1, "expected logs emitted");
+        //             assertEventLog(result.logs[0], "KreshmoiOffered", thirdAccount, "ETHZAR");
+        //             return PythiaInstance.getKreshmoi.call("ETHZAR");
+        //         }).then(kreshmoi => {
+        //             assert.equal(kreshmoi[0].length, 0, "Expected zero successful kreshmoi");
+        //             return PythiaInstance.offerKreshmoi("ETHZAR", 0, 4, { from: fourthAccount, gas: gasForofferKreshmoi });
+        //         }).then(result => {
+        //             assert.equal(result.logs.length, 1, "expected logs emitted");
+        //             assertEventLog(result.logs[0], "KreshmoiOffered", fourthAccount, "ETHZAR");
+        //             return PythiaInstance.getKreshmoi.call("ETHZAR");
+        //         }).then(kreshmoi => {
+        //             assert.equal(kreshmoi[0].length, 0, "Expected zero successful kreshmoi");
+        //             return PythiaInstance.offerKreshmoi("ETHZAR", 0, 7, { from: fifthAccount, gas: gasForofferKreshmoi });
+        //         }).then(result => {
+        //             assert.equal(result.logs.length, 2, "expected logs emitted");
+        //             assertEventLog(result.logs[0], "KreshmoiOffered", fifthAccount, "ETHZAR");
+        //             assertEventLog(result.logs[1], "ProphecyDelivered", "ETHZAR");
+        //             return PythiaInstance.getKreshmoi.call("ETHZAR");
+        //         }).then(kreshmoi => {
+        //             assert.equal(kreshmoi[0].length, 1, "Expected a successful kreshmoi");
+        //             assert.equal(kreshmoi[0][0].toNumber(), 525);
+        //             assert.equal(kreshmoi[1][0].toNumber(), 2);
+        //             return PythiaInstance.getBountyReward.call({ from: secondAccount });
+
+        //             //assert second account was paid
+        //         }).then(reward => {
+        //             var etherReward = convertToEther(reward);
+        //             assert.equal(etherReward, 10);
+        //             return PythiaInstance.collectBountyReward({ from: secondAccount, gas: gasForCollectReward });
+        //         }).then(result => {
+        //             return getBalancePromise(secondAccount);
+        //         }).then(balance => {
+        //             assert.isAtLeast(convertToEther(balance), accountBalances[0] + 9);//9 because some gas
+        //             return PythiaInstance.getBountyReward.call({ from: thirdAccount });
+        //         })
+        //         //assert third account was paid    
+        //         .then(reward => {
+        //             var etherReward = convertToEther(reward);
+        //             assert.equal(etherReward, 10);
+        //             return PythiaInstance.collectBountyReward({ from: thirdAccount, gas: gasForCollectReward });
+        //         }).then(result => {
+        //             return getBalancePromise(thirdAccount);
+        //         }).then(balance => {
+        //             assert.isAtLeast(convertToEther(balance), accountBalances[1] + 9);
+        //             return PythiaInstance.getBountyReward.call({ from: fourthAccount });
+        //         })
+        //         //assert fourth account was paid
+        //         .then(reward => {
+        //             var etherReward = convertToEther(reward);
+        //             assert.equal(etherReward, 10);
+        //             return PythiaInstance.collectBountyReward({ from: fourthAccount, gas: gasForCollectReward });
+        //         }).then(result => {
+        //             return getBalancePromise(fourthAccount);
+        //         }).then(balance => {
+        //             assert.isAtLeast(convertToEther(balance), accountBalances[2] + 9);
+        //             return PythiaInstance.getBountyReward.call({ from: fifthAccount });
+        //         })
+        //         //assert fifth account was paid
+        //         .then(reward => {
+        //             var etherReward = convertToEther(reward);
+        //             assert.equal(etherReward, 10);
+        //             return PythiaInstance.collectBountyReward({ from: fifthAccount, gas: gasForCollectReward });
+        //         }).then(result => {
+        //             return getBalancePromise(fifthAccount);
+        //         }).then(balance => {
+        //             assert.isAtLeast(convertToEther(balance), accountBalances[3] + 9);
+        //         });
+        // });
 
     });
 
