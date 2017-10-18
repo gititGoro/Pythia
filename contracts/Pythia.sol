@@ -37,15 +37,17 @@ contract Pythia is PythiaBase {
     }
 
     //passive functions START
-    mapping (address => mapping (address => uint8)) winningStreak;
+    mapping (address => mapping (address => uint8)) winningTower;
     mapping (string => PassiveKreshmoi[]) predictions;
     mapping (address => mapping (string => Prophecy[])) prophecies;
+    mapping(address => mapping (string => uint)) averageFrequencyPerFeed;
+    mapping (address => mapping(string => uint)) lastBlockOffered;
 
-    function rewardPythia(string datafeed, uint8 requiredSampleSize,uint16 maxBlockRange,int128 maxValueRange,uint8 decimalPlaces, uint8 minimumWinningStreak, address originalSender) payable {
+    function rewardPythia(string datafeed, uint8 requiredSampleSize,uint minimumFrequency, int128 maxValueRange,uint8 decimalPlaces, uint8 minimumwinningTower, address originalSender) payable {
         int128[] memory registers = new int128[](4); //0 = lower range, 1 = upper range, 2 = average,3 = reward
-        originalSender = originalSender == address(0)?msg.sender:originalSender;
+        originalSender = originalSender == address(0) ? msg.sender:originalSender;
         registers[3] = int128(msg.value / requiredSampleSize);
-        if (registers[3]<=0) {
+        if (registers[3] <= 0) {
             ScanPredictionsFailed(originalSender, "ether reward too small");
             refundsForFailedBounties[originalSender] += msg.value;
             return;
@@ -65,10 +67,10 @@ contract Pythia is PythiaBase {
         address[] memory winners = new address[](requiredSampleSize);
 
         for (uint i = predictionCount-1;i >= 0 && requiredSampleSize>0 ;i--) {
-            if (winningStreak[msg.sender][predictions[datafeed][i].oracle]<minimumWinningStreak)
+            if (winningTower[msg.sender][predictions[datafeed][i].oracle]<minimumwinningTower)
                 continue;
-            
-            if (predictions[datafeed][i].blockNumber < block.number - maxBlockRange)
+
+            if(averageFrequencyPerFeed[msg.sender][datafeed] ==0 || averageFrequencyPerFeed[msg.sender][datafeed]> minimumFrequency)
                 continue;
 
             if (predictions[datafeed][i].decimalPlaces != decimalPlaces)
@@ -77,14 +79,16 @@ contract Pythia is PythiaBase {
             if (predictions[datafeed][i].prediction<registers[0]) {
                 if (registers[1] - predictions[datafeed][i].prediction>maxValueRange) {
                     PredictionNotInAcceptableRange(predictions[datafeed][i].oracle, originalSender);
-                    winningStreak[msg.sender][predictions[datafeed][i].oracle] = 0;
+                    if (winningTower[msg.sender][predictions[datafeed][i].oracle]>0)
+                         winningTower[msg.sender][predictions[datafeed][i].oracle]--;
                     continue;
                 }
                 registers[0] = predictions[datafeed][i].prediction;
             } else if (predictions[datafeed][i].prediction>registers[1]) {
-                if (predictions[datafeed][i].prediction>maxValueRange - registers[0]) {
+                if (predictions[datafeed][i].prediction - registers[0]>maxValueRange ) {
                     PredictionNotInAcceptableRange(predictions[datafeed][i].oracle,originalSender);
-                    winningStreak[msg.sender][predictions[datafeed][i].oracle] = 0;
+                    if (winningTower[msg.sender][predictions[datafeed][i].oracle]>0)
+                        winningTower[msg.sender][predictions[datafeed][i].oracle] = 0;
                     continue;
                 }
                 registers[1] = predictions[datafeed][i].prediction;
@@ -102,7 +106,7 @@ contract Pythia is PythiaBase {
 
         for (i = 0;i<winners.length;i++) {
             if (winners[i]!=address(0)) {
-            winningStreak[msg.sender][winners[i]]++;
+            winningTower[msg.sender][winners[i]]++;
             rewardForSuccessfulProphecies[winners[i]] += uint(registers[3]);
             }
         }
@@ -116,7 +120,7 @@ contract Pythia is PythiaBase {
         prophecies[msg.sender][datafeed].push(success);
     }
 
-    function scanProphecies(string datafeed,uint16 maxBlockRange,uint8 decimalPlaces) returns (int128 sumOfPredictions, bool success) {
+    function scanProphecies(string datafeed,uint16 maxBlockRange, uint8 decimalPlaces) returns (int128 sumOfPredictions, uint8 sampleSize, bool success) {
      sumOfPredictions = 0; success = false;
         for (uint i = prophecies[msg.sender][datafeed].length;i > 0; i--) {
             if (prophecies[msg.sender][datafeed][i].blockNumber<block.number-maxBlockRange)
@@ -125,6 +129,7 @@ contract Pythia is PythiaBase {
                 continue;
             success = true;
             sumOfPredictions = prophecies[msg.sender][datafeed][i].sumOfPredictions;
+            sampleSize = prophecies[msg.sender][datafeed][i].sampleSize;
             return;
         }
     }
@@ -136,6 +141,26 @@ contract Pythia is PythiaBase {
             decimalPlaces:decimalPlaces,
             blockNumber:block.number
         }));
+        calculateKreshmoiFrequency(datafeed, msg.sender);
+    }
+
+    function calculateKreshmoiFrequency (string datafeed, address oracle) internal {
+      if (averageFrequencyPerFeed[oracle][datafeed]==0) {
+          if (lastBlockOffered[oracle][datafeed] > 0)
+            averageFrequencyPerFeed[oracle][datafeed] = block.number - lastBlockOffered[oracle][datafeed];
+      } else {
+         averageFrequencyPerFeed[oracle][datafeed] = (block.number - lastBlockOffered[oracle][datafeed] + averageFrequencyPerFeed[oracle][datafeed])/2;
+      }
+
+      lastBlockOffered[oracle][datafeed] = block.number;
+        /*1
+            mapping(address => mapping (string => uint32)) averageFrequencyPerFeed;
+    mapping (address => mapping(string => uint)) lastBlockOffered;
+        if(frequency>0)
+(current block – last block + frequency)/2
+else 
+current block – last block
+ */
     }
     
     //passive functions END
