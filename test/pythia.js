@@ -47,7 +47,7 @@ contract('Pythia', function (accounts) {
                 return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 12, 2, { from: secondAccount })
             }).then(result => {
                     console.log("result of passiveOfferKreshmoi" + JSON.stringify(result));
-                    //TODO: assert some of this stuff
+                   
                 });
         });
 
