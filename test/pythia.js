@@ -33,7 +33,7 @@ contract('Pythia', function (accounts) {
                 return getBalancePromise(secondAccount);
             }).then(initialBalance => {
                 accountBalances[0] = convertToEther(initialBalance);
-                console.log("balance "+initialBalance);
+                console.log("balance " + initialBalance);
                 return getBalancePromise(thirdAccount);
             }).then(initialBalance => {
                 accountBalances[1] = convertToEther(initialBalance);
@@ -44,16 +44,23 @@ contract('Pythia', function (accounts) {
             }).then(initialBalance => {
                 accountBalances[3] = convertToEther(initialBalance);
 
-                return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 12, 2, { from: secondAccount })
+                return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 1220, 2, { from: secondAccount })
             }).then(result => {
-                    console.log("result of passiveOfferKreshmoi" + JSON.stringify(result));
-                   
-                });
+                return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 1300, 2, { from: thirdAccount });
+            }).then(result => {
+                return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 1150, 2, { from: fourthAccount });
+            }).then(result => {
+                return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 1320, 2, { from: fifthAccount });
+            });
         });
 
 
         it("reward successful pythia and scan prophecies", () => {
-
+            return PythiaInstance.rewardPythia("ETHZAR", 4, 0, 400, 2, 0, "0x0", { from: firstAccount, value: 40 })
+            .then(result=>{
+                    console.log(JSON.stringify(result));
+            });
+            //rewardPythia(string datafeed, uint8 requiredSampleSize,uint minimumFrequency, int128 maxValueRange,uint8 decimalPlaces, uint8 minimumwinningTower, address originalSender) payable {
         });
 
 

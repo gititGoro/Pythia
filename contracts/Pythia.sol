@@ -58,7 +58,7 @@ contract Pythia is PythiaBase {
         if (predictionCount >= requiredSampleSize && predictionCount>0) {
             registers[0] = predictions[datafeed][predictionCount-1].prediction;
             registers[1] = predictions[datafeed][predictionCount-1].prediction;    
-        }else {
+        } else {
             ScanPredictionsFailed(originalSender, "too few predictions");
             refundsForFailedBounties[originalSender] += msg.value;
             return;
@@ -70,7 +70,7 @@ contract Pythia is PythiaBase {
             if (winningTower[msg.sender][predictions[datafeed][i].oracle]<minimumwinningTower)
                 continue;
 
-            if(averageFrequencyPerFeed[msg.sender][datafeed] ==0 || averageFrequencyPerFeed[msg.sender][datafeed]> minimumFrequency)
+            if (averageFrequencyPerFeed[msg.sender][datafeed] == 0 || averageFrequencyPerFeed[msg.sender][datafeed] > minimumFrequency)
                 continue;
 
             if (predictions[datafeed][i].decimalPlaces != decimalPlaces)
