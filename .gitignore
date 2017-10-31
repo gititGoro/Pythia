@@ -1,4 +1,4 @@
 bin/
 build/
 TransactionResultstructure.json
-*.sh
+node_modules/

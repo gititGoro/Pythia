@@ -1,0 +1,31 @@
+{
+  "name": "pythia",
+  "version": "0.1.0",
+  "description": "decentralized ethereum oracle for realtime datafeeds",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "concurrently \"npm run rpc:dev\" \"truffle test\"",
+    "rpc:dev": "./testRPCHighEther.sh",
+    "test:cleanup": "npm run test && kill $!"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gititGoro/Pythia.git"
+  },
+  "keywords": [
+    "solidity",
+    "ethereum"
+  ],
+  "author": "justin goro",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gititGoro/Pythia/issues"
+  },
+  "homepage": "https://github.com/gititGoro/Pythia#readme",
+  "dependencies": {
+    "concurrently": "^3.5.0"
+  }
+}

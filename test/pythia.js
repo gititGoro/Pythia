@@ -4,16 +4,15 @@
 var Pythia = artifacts.require("../contracts/Pythia.sol");
 
 contract('Pythia', function (accounts) {
-
+    var firstAccount = accounts[0];
+    var secondAccount = accounts[1];
+    var thirdAccount = accounts[2];
+    var fourthAccount = accounts[3];
+    var fifthAccount = accounts[4];
+    var accountBalances = [0, 0, 0, 0];
     describe("should accept 4 successful kreshmoi and only reward at the end", () => {
 
         var PythiaInstance;
-        var firstAccount = accounts[0];
-        var secondAccount = accounts[1];
-        var thirdAccount = accounts[2];
-        var fourthAccount = accounts[3];
-        var fifthAccount = accounts[4];
-        var accountBalances = [0, 0, 0, 0];
         var gasForofferKreshmoi = 6000000;
         var gasForCollectReward = "1000000";
         var gasForPostBounty = "6000000";
@@ -30,20 +29,7 @@ contract('Pythia', function (accounts) {
             Pythia.deployed().then(instance => {
                 PythiaInstance = instance;
             }).then(() => {
-                return getBalancePromise(secondAccount);
-            }).then(initialBalance => {
-                accountBalances[0] = convertToEther(initialBalance);
-                console.log("balance " + initialBalance);
-                return getBalancePromise(thirdAccount);
-            }).then(initialBalance => {
-                accountBalances[1] = convertToEther(initialBalance);
-                return getBalancePromise(fourthAccount);
-            }).then(initialBalance => {
-                accountBalances[2] = convertToEther(initialBalance);
-                return getBalancePromise(fifthAccount);
-            }).then(initialBalance => {
-                accountBalances[3] = convertToEther(initialBalance);
-
+                updateAllBalances();
                 return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 1220, 2, { from: secondAccount })
             }).then(result => {
                 return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 1300, 2, { from: thirdAccount });
@@ -57,12 +43,11 @@ contract('Pythia', function (accounts) {
 
         it("reward successful pythia and scan prophecies", () => {
             return PythiaInstance.rewardPythia("ETHZAR", 4, 0, 400, 2, 0, "0x0", { from: firstAccount, value: 40 })
-            .then(result=>{
+                .then(result => {
                     console.log(JSON.stringify(result));
-            });
+                });
             //rewardPythia(string datafeed, uint8 requiredSampleSize,uint minimumFrequency, int128 maxValueRange,uint8 decimalPlaces, uint8 minimumwinningTower, address originalSender) payable {
         });
-
 
         // it("validates bounty, claims refund and then posts", () => {
         //     //(string datafeed,uint8 requiredSampleSize,uint16 maxBlockRange,uint maxValueRange,uint8 decimalPlaces) payable{
@@ -168,6 +153,22 @@ contract('Pythia', function (accounts) {
         console.log("Converting big number " + bigNumber.toString());
         return bigNumber.dividedBy("1000000000000000000").toNumber();
 
+    }
+
+    function updateAllBalances() {
+        return getBalancePromise(secondAccount)
+            .then(initialBalance => {
+                accountBalances[0] = convertToEther(initialBalance);
+                return getBalancePromise(thirdAccount);
+            }).then(initialBalance => {
+                accountBalances[1] = convertToEther(initialBalance);
+                return getBalancePromise(fourthAccount);
+            }).then(initialBalance => {
+                accountBalances[2] = convertToEther(initialBalance);
+                return getBalancePromise(fifthAccount);
+            }).then(initialBalance => {
+                accountBalances[3] = convertToEther(initialBalance);
+            });
     }
 
     function getBalancePromise(account, timeout) {
