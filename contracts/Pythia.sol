@@ -14,20 +14,18 @@ Collect bounty reward, Successful kreshmoi
 */
 //TODO: implement a GetBountyReward to check the reward offered on each bounty. 
 
-import "./StringUtils.sol";
 import "./PythiaBase.sol";
 
 contract Pythia is PythiaBase {
 
     mapping (address => uint) rewardForSuccessfulProphecies; //stores the ether value of each successful kreshmoi. And yes, you can forget about reentrancy attacks.
-    mapping (string => Kreshmoi[]) successfulKreshmoi; //key is USDETH or CPIXZA for instance
-    mapping (string => Bounty[]) openBounties; 
     mapping (address => uint) refundsForFailedBounties;
     mapping (address => uint) donations;
     mapping (string => string) datafeedDescriptions;
     mapping (string => uint) datafeedChangeCost;
     string[] datafeedNames;
-    mapping (address => PostBountyDetails ) validationTickets;
+    
+    
     function Pythia() {
         
     }
@@ -40,8 +38,51 @@ contract Pythia is PythiaBase {
     mapping (address => mapping (address => uint8)) winningTower;
     mapping (string => PassiveKreshmoi[]) predictions;
     mapping (address => mapping (string => Prophecy[])) prophecies;
-    mapping(address => mapping (string => uint)) averageFrequencyPerFeed;
+    mapping (address => mapping (string => uint)) averageFrequencyPerFeed;
     mapping (address => mapping(string => uint)) lastBlockOffered;
+
+    //setters
+
+    function pushAverageFrequencyPerFeed(address outerKey, string key, uint value) public {
+            averageFrequencyPerFeed[outerKey][key] = value; 
+    }
+
+    function pushLastBlockOffered(address outerKey, string key, uint value) public {
+            lastBlockOffered[outerKey][key] = value; 
+    }
+
+    function pushRewardForSuccessfulProphecies(address key, uint value) public {
+            rewardForSuccessfulProphecies[key] = value; 
+    }
+
+    function pushRefundsForFailedBounties(address key, uint value) public {
+            refundsForFailedBounties[key] = value; 
+    }
+
+    function pushWinningTower(address outerkey, address innerkey, uint8 value) public {
+            winningTower[outerkey][innerkey] = value;
+    }
+
+      function pushPredictions(string datafeed, address oracle, int64 prediction, uint8 decimalPlaces) public {
+            predictions[datafeed].push(PassiveKreshmoi({
+            oracle:oracle,
+            prediction:prediction,
+            decimalPlaces:decimalPlaces,
+            blockNumber:block.number
+        }));
+      }
+
+      function pushProphecies(string datafeed, address sender, int128 sumOfPredictions, uint8 decimalPlaces, uint8 sampleSize) public {
+            Prophecy memory success = Prophecy({
+            sumOfPredictions: sumOfPredictions,
+            decimalPlaces:decimalPlaces,
+            sampleSize:sampleSize,
+            blockNumber:block.number
+        });
+        prophecies[sender][datafeed].push(success);
+      }
+            
+    //END Setters
 
     function rewardPythia(string datafeed, uint8 requiredSampleSize,uint minimumFrequency, int128 maxValueRange,uint8 decimalPlaces, uint8 minimumwinningTower, address originalSender) payable {
         int128[] memory registers = new int128[](4); //0 = lower range, 1 = upper range, 2 = average,3 = reward
