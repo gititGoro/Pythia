@@ -53,6 +53,8 @@ contract Pythia is PythiaBase {
             return;
         }
 
+        RewardPerOrace(registers[3]);
+
         uint predictionCount = predictions[datafeed].length;
 
         if (predictionCount >= requiredSampleSize && predictionCount>0) {
@@ -182,4 +184,6 @@ current block – last block
     //passive
     event PredictionNotInAcceptableRange (address oracle, address inquirer);
     event ScanPredictionsFailed (address inquirer, string reason);
+
+    event RewardPerOrace(int128 number);
 }

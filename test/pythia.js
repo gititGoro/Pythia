@@ -29,7 +29,8 @@ contract('Pythia', function (accounts) {
             Pythia.deployed().then(instance => {
                 PythiaInstance = instance;
             }).then(() => {
-                updateAllBalances();
+                return updateAllBalances();
+            }).then(() => {
                 return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 1220, 2, { from: secondAccount })
             }).then(result => {
                 return PythiaInstance.passiveOfferKreshmoi("ETHZAR", 1300, 2, { from: thirdAccount });
@@ -42,10 +43,19 @@ contract('Pythia', function (accounts) {
 
 
         it("reward successful pythia and scan prophecies", () => {
-            return PythiaInstance.rewardPythia("ETHZAR", 4, 0, 400, 2, 0, "0x0", { from: firstAccount, value: 40 })
-                .then(result => {
-                    console.log(JSON.stringify(result));
+            let balancesBefore = [];
+            return updateAllBalances()
+                .then(() => {
+                    return PythiaInstance.rewardPythia("ETHZAR", 4, 0, 400, 2, 0, "0x0", { from: firstAccount, value: 40000000 });
+                }).then(() => {
+                    accountBalances.forEach(balance => balancesBefore.push(balance));
+                    return updateAllBalances();
+                }).then(() => {
+                    for (i = 0; i < 4; i++)
+                        console.log("expected: " + balancesBefore[i] + 10 + "  actual: " + accountBalances[i]);
                 });
+
+
             //rewardPythia(string datafeed, uint8 requiredSampleSize,uint minimumFrequency, int128 maxValueRange,uint8 decimalPlaces, uint8 minimumwinningTower, address originalSender) payable {
         });
 
