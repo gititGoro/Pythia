@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.18;
 //TODO: read security stuff
 //TODO: when placing a bid, do an inplace sort so that the final request doesn't run out of gas
 //SECURITY: Always change all variables and only as the very last act, transfer ether.
@@ -43,8 +43,8 @@ contract Pythia is PythiaBase {
 
     //setters
 
-    function pushAverageFrequencyPerFeed(address outerKey, string key, uint value) public {
-            averageFrequencyPerFeed[outerKey][key] = value; 
+    function pushAverageFrequencyPerFeed(address user, string datafeed, uint blockfrequency) public {
+            averageFrequencyPerFeed[user][datafeed] = blockfrequency; 
     }
 
     function pushLastBlockOffered(address outerKey, string key, uint value) public {
@@ -63,14 +63,14 @@ contract Pythia is PythiaBase {
             winningTower[outerkey][innerkey] = value;
     }
 
-      function pushPredictions(string datafeed, address oracle, int64 prediction, uint8 decimalPlaces) public {
+    function pushPredictions(string datafeed, address oracle, int64 prediction, uint8 decimalPlaces) public {
             predictions[datafeed].push(PassiveKreshmoi({
             oracle:oracle,
             prediction:prediction,
             decimalPlaces:decimalPlaces,
             blockNumber:block.number
         }));
-      }
+    }
 
       function pushProphecies(string datafeed, address sender, int128 sumOfPredictions, uint8 decimalPlaces, uint8 sampleSize) public {
             Prophecy memory success = Prophecy({
@@ -196,14 +196,6 @@ contract Pythia is PythiaBase {
       }
 
       lastBlockOffered[oracle][datafeed] = block.number;
-        /*1
-            mapping(address => mapping (string => uint32)) averageFrequencyPerFeed;
-    mapping (address => mapping(string => uint)) lastBlockOffered;
-        if(frequency>0)
-(current block – last block + frequency)/2
-else 
-current block – last block
- */
     }
     
     //passive functions END
