@@ -2,3 +2,4 @@ bin/
 build/
 TransactionResultstructure.json
 node_modules/
+ssh/
