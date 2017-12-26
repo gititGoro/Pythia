@@ -24,7 +24,7 @@ contract AccessRestriction {
 
     /// Make `_newOwner` the new owner of this
     /// contract.
-    function changeOwner(address _newOwner)
+    function changeOwner(address _newOwner) public
         onlyBy(owner)
     {
         owner = _newOwner;
@@ -38,7 +38,7 @@ contract AccessRestriction {
     /// Erase ownership information.
     /// May only be called 6 weeks after
     /// the contract has been created.
-    function disown()
+    function disown() public
         onlyBy(owner)
         onlyAfter(creationTime + 6 weeks)
     {
@@ -58,15 +58,16 @@ contract AccessRestriction {
             msg.sender.transfer(msg.value - _amount);
     }
 
-    function forceOwnerChange(address _newOwner)
+    function forceOwnerChange(address _newOwner) public
         costs(200 ether)
     {
         owner = _newOwner;
         // just some example condition
         if (uint(owner) & 0 == 1)
+                  return;
             // This did not refund for Solidity
             // before version 0.4.0.
-            return;
+  
         // refund overpaid fees
     }
 }
