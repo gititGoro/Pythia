@@ -16,6 +16,7 @@ contract FeedMaster is AccessRestriction {
     FeedTemplate[] feeds;
 
     function pushNewFeed(uint8 decimalPlaces, uint8 numberOfOracles, string feedName, string description) public payable {
+            require (msg.value>0);
             balance += msg.value;
             feedIDmapping[feedName].push(feeds.length);
             FeedTemplate memory template = FeedTemplate({
@@ -39,7 +40,6 @@ contract FeedMaster is AccessRestriction {
         numberOfOracles = feeds[id].numberOfOracles;
         decimalPlaces = feeds[id].decimalPlaces;
         description = feeds[id].description;
-        
     }
 
     function withDraw() public {
