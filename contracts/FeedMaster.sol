@@ -34,7 +34,7 @@ contract FeedMaster is AccessRestriction {
         return feedIDmapping[feedName];
     }
 
-    function getFeedById (uint id) public view returns (string feedName, uint reward, uint8 numberOfOracles, uint8 decimalPlaces, string description) {
+    function getFeedById (uint id) public view returns (string feedName, uint reward,  uint8 decimalPlaces, uint8 numberOfOracles, string description) {
         feedName = feeds[id].feedName;
         reward = feeds[id].reward;
         numberOfOracles = feeds[id].numberOfOracles;
