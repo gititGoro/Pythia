@@ -1,5 +1,6 @@
 let feedMaster = artifacts.require("../contracts/FeedMaster.sol");
-let test = require("./helper.js").test;
+let test = require("./helpers/async.js").test;
+let expectThrow = require("./helpers/expectThrow.js").handle;
 
 contract('FeedMaster', function (accounts) {
 
@@ -24,16 +25,8 @@ contract('FeedMaster', function (accounts) {
             assert.equal(detail[4], "ether rand exchange rate", "description");
         });
 
-        it("should fail when not sending ether", () => {
-            //TODO: look up on truffle how to test for throws: http://truffleframework.com/tutorials/testing-for-throws-in-solidity-tests
+        test("should fail when not sending ether", async () => {
+            await expectThrow(feedMasterInstance.pushNewFeed(4, 5, "ETHZAR", "ether rand exchange rate", { from: accounts[0] }));
         });
     });
-
-
-    // function test(message, functionToTest) {
-    //     it(message, (done) => {
-    //         functionToTest().then(done).catch(error => { done(error); });
-    //     });
-    // }
-
 });
