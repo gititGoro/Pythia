@@ -26,19 +26,3 @@ module.exports = function (callback) {
         .then(() => callback())
         .catch(error => callback(error));
 }
-
-
-
-
-// var FeedMaster = artifacts.require("../contracts/FeedMaster.sol");
-// var OpenPredictions = artifacts.require("../contracts/OpenPredictions.sol");
-
-// var feed = FeedMaster.at(FeedMaster.deployed_address);
-
-// var prediction = OpenPredictions.at(OpenPredictions.deployed_address);
-
-// prediction.setFeedMaster(FeedMaster.deployed_address)
-//     .catch(error => console.log(error));
-
-
-//TODO: get this to work.
