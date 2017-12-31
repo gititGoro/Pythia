@@ -9,7 +9,7 @@ contract FeedMaster is AccessRestriction {
         string feedName;
         string description;
     }
-
+    //TODO: have a way to clear out unpopular feeds
     uint balance;
     mapping (string => uint[]) feedIDmapping;
 
@@ -40,6 +40,10 @@ contract FeedMaster is AccessRestriction {
         numberOfOracles = feeds[id].numberOfOracles;
         decimalPlaces = feeds[id].decimalPlaces;
         description = feeds[id].description;
+    }
+
+    function isValidFeed(uint id) public view returns (bool) {
+        return id < feeds.length;
     }
 
     function withDraw() public {

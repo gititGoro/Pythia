@@ -7,6 +7,12 @@ contract AccessRestriction {
     address public owner = msg.sender;
     uint public creationTime = now;
 
+
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
+
     // Modifiers can be used to change
     // the body of a function.
     // If this modifier is used, it will
