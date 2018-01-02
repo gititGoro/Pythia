@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "npm run deploy && truffle test",
+    "test": "npm run deploy:dev && truffle test",
     "rpc:dev": "./testRPCHighEther.sh",
     "test:cleanup": "npm run test && kill $!",
     "deploy:dev": "rm -rf build/ && truffle migrate --reset --compile-all && truffle exec migrations/injections.js"
