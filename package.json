@@ -7,10 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "test": "npm run deploy:dev && truffle test",
-    "rpc:dev": "./testRPCHighEther.sh",
-    "test:cleanup": "npm run test && kill $!",
-    "deploy:dev": "rm -rf build/ && truffle migrate --reset --compile-all && truffle exec migrations/injections.js"
+    "test": "npm run build && truffle test",
+    "deploy": "npm run build && truffle migrate --reset --compile-all && truffle exec migrations/injections.js",
+    "build": "rm -rf build/ && truffle compile "
   },
   "repository": {
     "type": "git",

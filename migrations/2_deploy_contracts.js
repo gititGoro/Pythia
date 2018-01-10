@@ -9,6 +9,7 @@ module.exports = function (deployer) {
   deployer.deploy(PythiaBase);
   deployer.link(AccessRestriction, PythiaBase);
   deployer.link(AccessRestriction, FeedMaster);
+  deployer.link(AccessRestriction, OpenPredictions);
   deployer.link(PythiaBase, Pythia);
   deployer.deploy(Pythia, { gas: 6000000 });
   deployer.deploy(FeedMaster, { gas: 6000000 });
