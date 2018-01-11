@@ -33,7 +33,7 @@ contract('OpenPredictions', accounts => {
 
     //FIX: invalid number of arguments to solidity function: fails for both truffle and ganache
     test("place Prediction at valid feed", async () => {
-        await openPredictionsInstance.placePredictions(BTCUSDID, 1300, { from: accounts[2] });
+        await openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2] });
     });
 
     // test("get prediction for valid feed", async () => {

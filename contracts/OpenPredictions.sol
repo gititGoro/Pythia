@@ -12,13 +12,20 @@ contract OpenPredictions is AccessRestriction {
     }
     
     FeedMaster feedMaster;
+    address judgeAddress;
     mapping (uint => Prediction[]) predictions;
+    mapping (address => uint) deposits;
+    mapping (address => uint) burntDeposits; //penalty for spamming
+
+    function setJudgeAddress (address judge) onlyOwner public {
+        judgeAddress = judge;
+    }
 
     function setFeedMaster(address feedMasterAddress) onlyOwner public {
         feedMaster = FeedMaster (feedMasterAddress);
     }
 
-    function placePredictions(uint feedId, uint value) public {
+    function placePrediction(uint feedId, uint value) public payable {
         require(feedMaster.isValidFeed(feedId));
 
         if (predictions[feedId].length > 10000) {
@@ -49,5 +56,22 @@ contract OpenPredictions is AccessRestriction {
 
     function validateBlockNumberForFeedIdAtIndex (uint feedId, uint index, uint cutoffblock) public view returns (bool) {
           return predictions[feedId][index].blocknumber>cutoffblock; 
+    }
+
+    function getDepositForOracle (address oracle) public view returns (uint) {
+            return deposits[oracle];
+    }
+
+    function burnDeposits (address[] oracles, uint amount) public {
+            require (msg.sender == judgeAddress);
+            for (uint i = 0; i < oracles.length;i++) {
+                uint amountToBurn = amount > deposits[oracles[i]] ? deposits[oracles[i]] : amount;
+                deposits[oracles[i]] -= amountToBurn;
+                burntDeposits[oracles[i]] += amountToBurn;
+            }
+    }
+
+    function withDraw() public pure {
+       //TODO: implement drawdown of deposit.
     }
 }
