@@ -7,23 +7,23 @@ let expectThrow = require("./helpers/expectThrow.js").handle;
 
 contract('OpenPredictions', accounts => {
     var feedMasterInstance, openPredictionsInstance, BTCUSDID;
-    before(() => {
+    before((done) => {
         feedMaster.deployed()
             .then(instance => {
                 feedMasterInstance = instance;
                 return openPredictions.deployed();
             }).then(open => {
                 openPredictionsInstance = open;
-                return feedMasterInstance.pushNewFeed(10, 6, "BTCUSD", "bitcoin dollar exchange rate", { from: accounts[0], value: 100 });
+                return feedMasterInstance.pushNewFeed(10, 6, 100, "BTCUSD", "bitcoin dollar exchange rate", { from: accounts[0], value: 100 });
             })
             .then(() => {
                 return feedMasterInstance.getIDsForFeed.call("BTCUSD");
             }).then((result) => {
-                BTCUSDID = result;
-                console.log(`BTCUSD: ${BTCUSDID}`);
+                BTCUSDID = parseInt(result[0]);
                 return openPredictionsInstance.setFeedMaster(feedMasterInstance.address);
 
-            }).then(() => console.log("before: setup complete"));
+            }).then(() => {console.log("before: setup complete"); done();})
+            .catch(error=>done(error));
     });
 
     test("run before", async () => {
@@ -31,8 +31,9 @@ contract('OpenPredictions', accounts => {
     });
 
 
-    //FIX: invalid number of arguments to solidity function: fails for both truffle and ganache
+   
     test("place Prediction at valid feed", async () => {
+        var BTCUSDID_int = parseInt(BTCUSDID);
         await openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2] });
     });
 
