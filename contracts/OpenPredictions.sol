@@ -4,6 +4,8 @@ import "./AccessRestriction.sol";
 
 contract OpenPredictions is AccessRestriction {
     
+    event WithdrawalProcessed(address account, uint amount); 
+
     struct Prediction {
         uint value;
         uint feedId;
@@ -28,7 +30,7 @@ contract OpenPredictions is AccessRestriction {
     function placePrediction(uint feedId, uint value) public payable {
         require(feedMaster.isValidFeed(feedId));
         require(feedMaster.getRewardByFeedId(feedId) <= msg.value);
-        
+
         deposits[msg.sender] += msg.value;
 
         if (predictions[feedId].length > 10000) {
@@ -46,6 +48,8 @@ contract OpenPredictions is AccessRestriction {
     }
 
     function getLastIndexForFeed(uint feedId) public view returns (uint index) {
+        if (predictions[feedId].length == 0)
+            return 1000000;
         return predictions[feedId].length-1;
     }
 
@@ -74,12 +78,13 @@ contract OpenPredictions is AccessRestriction {
             }
     }
 
-    function withDraw(uint amountToWithdraw) public {
+    function withdraw(uint amountToWithdraw) public {
         amountToWithdraw = deposits[msg.sender] > amountToWithdraw?
             amountToWithdraw:deposits[msg.sender];
 
-        if (deposits[msg.sender] <= amountToWithdraw)
+        if (deposits[msg.sender] >= amountToWithdraw)
           deposits[msg.sender] -= amountToWithdraw;
+        WithdrawalProcessed(msg.sender, amountToWithdraw);
         msg.sender.transfer(amountToWithdraw);
     }
 }
