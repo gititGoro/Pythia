@@ -27,6 +27,9 @@ contract OpenPredictions is AccessRestriction {
 
     function placePrediction(uint feedId, uint value) public payable {
         require(feedMaster.isValidFeed(feedId));
+        require(feedMaster.getRewardByFeedId(feedId) <= msg.value);
+        
+        deposits[msg.sender] += msg.value;
 
         if (predictions[feedId].length > 10000) {
                 predictions[feedId].length = 0; 
@@ -71,7 +74,12 @@ contract OpenPredictions is AccessRestriction {
             }
     }
 
-    function withDraw() public pure {
-       //TODO: implement drawdown of deposit.
+    function withDraw(uint amountToWithdraw) public {
+        amountToWithdraw = deposits[msg.sender] > amountToWithdraw?
+            amountToWithdraw:deposits[msg.sender];
+
+        if (deposits[msg.sender] <= amountToWithdraw)
+          deposits[msg.sender] -= amountToWithdraw;
+        msg.sender.transfer(amountToWithdraw);
     }
 }

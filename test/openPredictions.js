@@ -22,13 +22,22 @@ contract('OpenPredictions', accounts => {
                 BTCUSDID = parseInt(result[0]);
                 return openPredictionsInstance.setFeedMaster(feedMasterInstance.address);
 
-            }).then(() => {console.log("before: setup complete"); done();})
-            .catch(error=>done(error));
+            }).then(() => { console.log("before: setup complete"); done(); })
+            .catch(error => done(error));
     });
 
     test("place Prediction at valid feed", async () => {
-        var BTCUSDID_int = parseInt(BTCUSDID);
-        await openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2] });
+        await(openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2], value: 100 }));
+
+        
+    });
+
+    test("place Prediction at invalid feed", async () => {
+        expectThrow(openPredictionsInstance.placePrediction(10, 1300, { from: accounts[2], value: 100 }));
+    });
+
+    test("place Prediction at valid feed with too small a deposit", async () => {
+        expectThrow(openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2], value: 99 }));
     });
 
 });
