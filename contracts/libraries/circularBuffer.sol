@@ -1,7 +1,6 @@
 pragma solidity ^0.4.18;
 library CircularBufferLib {
     
-    
     struct PredictionRing {
         uint bufferSize;
         uint oldestIndex;
