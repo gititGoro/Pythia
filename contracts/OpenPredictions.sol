@@ -1,30 +1,24 @@
 pragma solidity ^0.4.18;
 import "./FeedMaster.sol";
 import "./AccessRestriction.sol";
+import "./libraries/circularBuffer.sol";
 
 contract OpenPredictions is AccessRestriction {
-    
-    event WithdrawalProcessed(address account, uint amount); 
+    using CircularBufferLib for CircularBufferLib.PredictionRing;
 
-    struct Prediction {
-        uint value;
-        uint feedId;
-        uint blocknumber;
-        address oracle;
-    }
+    event WithdrawalProcessed(address account, uint amount); 
     
     FeedMaster feedMaster;
     address judgeAddress;
-    mapping (uint => Prediction[]) predictions;
+    mapping (uint => CircularBufferLib.PredictionRing) predictions;
     mapping (address => uint) deposits;
     mapping (address => uint) burntDeposits; //penalty for spamming
+    uint predictionRBufferSize;
 
-    function setJudgeAddress (address judge) onlyOwner public {
+    function setDependencies (address judge, address feedMasterAddress, uint predictionRingSize) onlyOwner public {
         judgeAddress = judge;
-    }
-
-    function setFeedMaster(address feedMasterAddress) onlyOwner public {
         feedMaster = FeedMaster (feedMasterAddress);
+        predictionRBufferSize = predictionRingSize;
     }
 
     function placePrediction(uint feedId, uint value) public payable {
@@ -32,37 +26,27 @@ contract OpenPredictions is AccessRestriction {
         require(feedMaster.getRewardByFeedId(feedId) <= msg.value);
 
         deposits[msg.sender] += msg.value;
-
-        if (predictions[feedId].length > 10000) {
-                predictions[feedId].length = 0; 
+        if (predictions[feedId].bufferSize == 0) {
+            predictions[feedId].init(predictionRBufferSize);
         }
 
-        Prediction memory prediction = Prediction({
-            value:value,
-            feedId:feedId,
-            blocknumber: block.number,
-            oracle: msg.sender
-        });
-
-        predictions[feedId].push(prediction);
+         predictions[feedId].insertPrediction(value, msg.sender);
     }
 
     function getLastIndexForFeed(uint feedId) public view returns (uint index) {
-        if (predictions[feedId].length == 0)
-            return 1000000;
-        return predictions[feedId].length-1;
+        return predictions[feedId].oldestIndex;
     }
 
     function getPredictionOracleForFeedIdAtIndex(uint feedId, uint index) public view returns (address) {
-        return predictions[feedId][index].oracle;    
+        return predictions[feedId].oracles[index];    
     }
 
     function getPredictionValueForFeedIdAtIndex (uint feedId, uint index) public view returns (uint) {
-        return predictions[feedId][index].value;    
+        return predictions[feedId].values[index];    
     }
 
     function validateBlockNumberForFeedIdAtIndex (uint feedId, uint index, uint cutoffblock) public view returns (bool) {
-          return predictions[feedId][index].blocknumber>cutoffblock; 
+          return predictions[feedId].blocknumbers[index]>cutoffblock; 
     }
 
     function getDepositForOracle (address oracle) public view returns (uint) {

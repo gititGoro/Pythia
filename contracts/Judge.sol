@@ -3,6 +3,7 @@ import "./FeedMaster.sol";
 import "./AccessRestriction.sol";
 import "./OpenPredictions.sol";
 import "./KreshmoiHistory.sol";
+import "./libraries/circularBuffer.sol";
 
 contract Judge is AccessRestriction {
     uint placeholder;
