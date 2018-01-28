@@ -1,5 +1,7 @@
-let openPredictions = artifacts.require("../contracts/OpenPredictions.sol");
-let feedMaster = artifacts.require("../contracts/FeedMaster.sol");
+let openPredictions = artifacts.require("OpenPredictions");
+let feedMaster = artifacts.require("FeedMaster");
+let kreshmoiHistory = artifacts.require("KreshmoiHistory");
+let judge = artifacts.require("Judge");
 let async = require("./helpers/async.js");
 let test = async.test;
 let beforeTest = require("./helpers/async.js").beforeTest;
@@ -7,7 +9,7 @@ let expectThrow = require("./helpers/expectThrow.js").handle;
 let getBalance = async.getBalancePromise;
 
 contract('OpenPredictions', accounts => {
-    var feedMasterInstance, openPredictionsInstance, BTCUSDID;
+    var feedMasterInstance, openPredictionsInstance, judgeInstance, kreshmoiHistoryInstance, BTCUSDID;
     before((done) => {
         feedMaster.deployed()
             .then(instance => {
@@ -16,21 +18,33 @@ contract('OpenPredictions', accounts => {
             }).then(open => {
                 openPredictionsInstance = open;
                 return feedMasterInstance.pushNewFeed(10, 6, 100, "BTCUSD", "bitcoin dollar exchange rate", { from: accounts[0], value: 100 });
+            }).then(() => {
+                return judge.deployed();
             })
-            .then(() => {
+            .then(instance => {
+                judgeInstance = instance;
+                return kreshmoiHistory.deployed();
+            })
+            .then(instance => {
+                kreshmoiHistoryInstance = instance;
                 return feedMasterInstance.getIDsForFeed.call("BTCUSD");
-            }).then((result) => {
+            }).then(result => {
                 BTCUSDID = parseInt(result[0]);
-                return openPredictionsInstance.setFeedMaster(feedMasterInstance.address);
+                return openPredictionsInstance.setDependencies(judgeInstance.address, feedMasterInstance.address, 10);
 
-            }).then(() => { console.log("before: setup complete"); done(); })
+            }).then(() => {
+                done();
+                // return kreshmoiHistoryInstance.setDependencies(judgeInstance.address, feedMasterInstance.address);
+            })/*.then(() => {
+                return judgeInstance.setDependencies(feedMasterInstance.address, openPredictionsInstance.address, kreshmoiHistoryInstance.address);
+            })
+            .then(() => { console.log("before: setup complete"); done(); })*/
             .catch(error => done(error));
     });
 
     test("place Prediction at valid feed", async () => {
         let guessingOracleInitialBalance = await getBalance(accounts[2]);
         let predictionIndex = await openPredictionsInstance.getLastIndexForFeed.call(BTCUSDID);
-        assert.equal(predictionIndex, 1000000, "there should be no predictions for btcusd yet, represented by 1 million");
         await (openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2], value: 100 }));
 
         let guessingOracleBalanceAfter = await getBalance(accounts[2]);
@@ -52,6 +66,18 @@ contract('OpenPredictions', accounts => {
 
         let depositForOracleAfterWithdrawal = await openPredictionsInstance.getDepositForOracle.call(guessingOracle);
         assert.equal(depositForOracleAfterWithdrawal, 10, "deposit for oracle should equal 10");
+    });
+
+    test("place many valid predictions so that circular buffer wraps around", async () => {
+        assert.equal(0, 1, "test not implemented yet");
+    });
+
+    test ("judge contract burns deposits", async () => {
+        assert.equal(0, 1, "test not implemented yet");
+    });
+
+    test ("non judge address burns deposits and fails", async () => {
+        assert.equal(0, 1, "test not implemented yet");
     });
 
     test("place Prediction at invalid feed", async () => {
