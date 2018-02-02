@@ -10,7 +10,7 @@ contract OpenPredictions is AccessRestriction {
     
     FeedMaster feedMaster;
     address judgeAddress;
-    mapping (uint => CircularBufferLib.PredictionRing) predictions;
+    mapping (uint => CircularBufferLib.PredictionRing) public predictions;
     mapping (address => uint) deposits;
     mapping (address => uint) burntDeposits; //penalty for spamming
     uint predictionRBufferSize;
@@ -19,6 +19,18 @@ contract OpenPredictions is AccessRestriction {
         judgeAddress = judge;
         feedMaster = FeedMaster (feedMasterAddress);
         predictionRBufferSize = predictionRingSize;
+    }
+
+    function resetPredictionIterator(uint feedId) public {
+        predictions[feedId].resetIterator();
+    }
+
+    function movePredictionIterator(uint feedId) public {
+        predictions[feedId].moveIterator();
+    }
+
+    function getCurrentPredictionValue (uint feedId) public view returns (uint, address, uint) {
+       return predictions[feedId].getCurrentValue();
     }
 
     function placePrediction(uint feedId, uint value) public payable {
@@ -33,8 +45,8 @@ contract OpenPredictions is AccessRestriction {
          predictions[feedId].insertPrediction(value, msg.sender);
     }
 
-    function getLastIndexForFeed(uint feedId) public view returns (uint index) {
-        return predictions[feedId].oldestIndex;
+    function getNextIndexForFeed(uint feedId) public view returns (uint index) {
+        return predictions[feedId].nextIndex;
     }
 
     function getPredictionOracleForFeedIdAtIndex(uint feedId, uint index) public view returns (address) {

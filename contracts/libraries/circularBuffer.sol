@@ -3,7 +3,7 @@ library CircularBufferLib {
     
     struct PredictionRing {
         uint bufferSize;
-        uint oldestIndex;
+        uint nextIndex;
         mapping (address => uint) iterator;
         uint[] values;
         uint[] blocknumbers;
@@ -20,16 +20,16 @@ library CircularBufferLib {
             self.oracles.push(oracle);
             self.blocknumbers.push(block.number);
         } else {
-            self.values[self.oldestIndex] = value;
-            self.oracles[self.oldestIndex] = oracle;
-            self.blocknumbers[self.oldestIndex] = block.number;
-            self.oldestIndex++;
-            self.oldestIndex = self.oldestIndex % self.bufferSize;
+            self.values[self.nextIndex] = value;
+            self.oracles[self.nextIndex] = oracle;
+            self.blocknumbers[self.nextIndex] = block.number;
         }
+        self.nextIndex++;
+        self.nextIndex = self.nextIndex % self.bufferSize;
     }
 
     function resetIterator(PredictionRing storage self) public {
-        self.iterator[msg.sender] = self.oldestIndex;
+        self.iterator[msg.sender] = self.nextIndex;
     }
 
     function moveIterator (PredictionRing storage self) public {

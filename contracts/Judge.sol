@@ -37,7 +37,7 @@ contract Judge is AccessRestriction {
        uint8 requiredNumberOfOracles = feedMaster.getNumberOfOracles(feedId);
        address[] memory oracles = new address[](requiredNumberOfOracles);
        uint[] memory values = new uint[](requiredNumberOfOracles);
-       uint i = openPredictions.getLastIndexForFeed(feedId);
+       uint i = openPredictions.getNextIndexForFeed(feedId);
        uint[3] memory rangeOfPredictions = [2**256-1,0,0]; 
        for (;i>0 && requiredNumberOfOracles>0;i--) {
             address currentOracle = openPredictions.getPredictionOracleForFeedIdAtIndex(feedId,i);

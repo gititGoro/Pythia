@@ -44,13 +44,13 @@ contract('OpenPredictions', accounts => {
 
     test("place Prediction at valid feed", async () => {
         let guessingOracleInitialBalance = await getBalance(accounts[2]);
-        let predictionIndex = await openPredictionsInstance.getLastIndexForFeed.call(BTCUSDID);
+        let predictionIndex = await openPredictionsInstance.getNextIndexForFeed.call(BTCUSDID);
         await (openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2], value: 100 }));
 
         let guessingOracleBalanceAfter = await getBalance(accounts[2]);
         assert.isAbove(guessingOracleInitialBalance, guessingOracleBalanceAfter + 100);
 
-        predictionIndex = await openPredictionsInstance.getLastIndexForFeed.call(BTCUSDID);
+        predictionIndex = parseInt(await openPredictionsInstance.getNextIndexForFeed.call(BTCUSDID)) - 1;
         assert.equal(predictionIndex, 0, "there should be one predictions for btcusd");
 
         let guessingOracle = await openPredictionsInstance.getPredictionOracleForFeedIdAtIndex.call(BTCUSDID, predictionIndex);
@@ -69,14 +69,22 @@ contract('OpenPredictions', accounts => {
     });
 
     test("place many valid predictions so that circular buffer wraps around", async () => {
+        let index = parseInt(await openPredictionsInstance.getNextIndexForFeed.call(BTCUSDID));
+        await openPredictionsInstance.resetPredictionIterator(BTCUSDID);
+        for (let i = index + 1; i <= 20; i++) {
+            await (openPredictionsInstance.placePrediction(BTCUSDID, 1300 * i, { from: accounts[i % 4], value: 100 }));
+            index = await openPredictionsInstance.getNextIndexForFeed.call(BTCUSDID);
+            assert.equal(index, i % 10, "expected index to wrap around");
+            let currentValue = await GetCurrentValue(openPredictionsInstance);
+            assertCurrentValue(currentValue, 1300 * i, accounts[i % 4]);
+        }
+    });
+
+    test("judge contract burns deposits", async () => {
         assert.equal(0, 1, "test not implemented yet");
     });
 
-    test ("judge contract burns deposits", async () => {
-        assert.equal(0, 1, "test not implemented yet");
-    });
-
-    test ("non judge address burns deposits and fails", async () => {
+    test("non judge address burns deposits and fails", async () => {
         assert.equal(0, 1, "test not implemented yet");
     });
 
@@ -88,4 +96,14 @@ contract('OpenPredictions', accounts => {
         expectThrow(openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2], value: 99 }));
     });
 
+    async function GetCurrentValue(openPredictionsInstance) {
+        var value = await openPredictionsInstance.getCurrentPredictionValue(BTCUSDID);
+        await openPredictionsInstance.movePredictionIterator(BTCUSDID);
+        return value;
+    }
+
+    assertCurrentValue = (value, amount, account, previousBlock) => {
+        assert.equal(parseInt(value[0]), amount, "amount incorrect");
+        assert.equal(value[1], account, "address incorrect");
+    }
 });
