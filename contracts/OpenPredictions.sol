@@ -8,12 +8,18 @@ contract OpenPredictions is AccessRestriction {
 
     event WithdrawalProcessed(address account, uint amount); 
     
+    struct BurnQueueItem {
+        address[] addressesToBurn;
+        uint amount;
+    }
+
     FeedMaster feedMaster;
     address judgeAddress;
     mapping (uint => CircularBufferLib.PredictionRing) public predictions;
     mapping (address => uint) deposits;
     mapping (address => uint) burntDeposits; //penalty for spamming
     uint predictionRBufferSize;
+    BurnQueueItem[] burnQueue;
 
     function setDependencies (address judge, address feedMasterAddress, uint predictionRingSize) onlyOwner public {
         judgeAddress = judge;
@@ -21,16 +27,24 @@ contract OpenPredictions is AccessRestriction {
         predictionRBufferSize = predictionRingSize;
     }
 
-    function resetPredictionIterator(uint feedId) public {
-        predictions[feedId].resetIterator();
+    function resetPredictionIterator(uint feedId, address caller) public {
+        predictions[feedId].resetIterator(caller);
     }
 
-    function movePredictionIterator(uint feedId) public {
-        predictions[feedId].moveIterator();
+    function movePredictionIterator(uint feedId, address caller) public {
+        predictions[feedId].moveIterator(caller);
     }
 
-    function getCurrentPredictionValue (uint feedId) public view returns (uint, address, uint) {
-       return predictions[feedId].getCurrentValue();
+    function movePredictionIteratorBackwards (uint feedId, address caller) public {
+        predictions[feedId].moveIteratorBackwards(caller);
+    }
+
+    function getCurrentIterator (uint feedId, address caller) public view returns (uint) {
+        return predictions[feedId].iterator[caller];
+    }
+
+    function getCurrentPredictionValue (uint feedId, address caller) public view returns (uint, address, uint) {
+       return predictions[feedId].getCurrentValue(caller);
     }
 
     function placePrediction(uint feedId, uint value) public payable {
@@ -43,6 +57,14 @@ contract OpenPredictions is AccessRestriction {
         }
 
          predictions[feedId].insertPrediction(value, msg.sender);
+    }
+
+    function deleteCurrentPrediction (uint feedId, address caller) public {
+            predictions[feedId].deleteCurrentPrediction(caller);
+    }
+
+    function isCurrentPredictionEmpty(uint feedId, address caller) public view returns (bool) {
+            return predictions[feedId].isEmpty(caller);
     }
 
     function getNextIndexForFeed(uint feedId) public view returns (uint index) {
@@ -65,16 +87,28 @@ contract OpenPredictions is AccessRestriction {
             return deposits[oracle];
     }
 
-    function burnDeposits (address[] oracles, uint amount) public {
+    function queueBurnDeposits (address[] oracles, uint amount) public {
             require (msg.sender == judgeAddress);
-            for (uint i = 0; i < oracles.length;i++) {
-                uint amountToBurn = amount > deposits[oracles[i]] ? deposits[oracles[i]] : amount;
-                deposits[oracles[i]] -= amountToBurn;
-                burntDeposits[oracles[i]] += amountToBurn;
+           
+            BurnQueueItem memory item = BurnQueueItem({
+                addressesToBurn:oracles,
+                amount:amount
+            });
+            burnQueue.push(item);
+    }
+
+    function advanceBurnQueue(uint numberOfItems) public {
+        numberOfItems = numberOfItems > burnQueue.length ? burnQueue.length : numberOfItems;
+        for (numberOfItems--;numberOfItems>=0;numberOfItems--) {
+            for (uint j = 0; j<burnQueue[numberOfItems].addressesToBurn.length;j++) {
+               deposits[burnQueue[numberOfItems].addressesToBurn[j]] -= burnQueue[numberOfItems].amount;
             }
+            burnQueue.length--;
+        }   
     }
 
     function withdraw(uint amountToWithdraw) public {
+        require(burnQueue.length == 0); //can't withdraw until failed deposits have been burnt
         amountToWithdraw = deposits[msg.sender] > amountToWithdraw?
             amountToWithdraw:deposits[msg.sender];
 

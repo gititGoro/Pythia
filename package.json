@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/gititGoro/Pythia#readme",
   "dependencies": {
+    "bignumber.js": "^6.0.0",
     "concurrently": "^3.5.0"
   }
 }

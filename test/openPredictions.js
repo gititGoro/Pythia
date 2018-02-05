@@ -1,3 +1,5 @@
+let BigNumber = require('bignumber.js');
+let scaleBackBigNumber = (number, factor) => parseInt(number.dividedBy(factor).toString());
 let openPredictions = artifacts.require("OpenPredictions");
 let feedMaster = artifacts.require("FeedMaster");
 let kreshmoiHistory = artifacts.require("KreshmoiHistory");
@@ -43,12 +45,15 @@ contract('OpenPredictions', accounts => {
     });
 
     test("place Prediction at valid feed", async () => {
+        let weiDeposit = new BigNumber("1.0e+22");
         let guessingOracleInitialBalance = await getBalance(accounts[2]);
         let predictionIndex = await openPredictionsInstance.getNextIndexForFeed.call(BTCUSDID);
-        await (openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2], value: 100 }));
+        await (openPredictionsInstance.placePrediction(BTCUSDID, 1300, { from: accounts[2], value: weiDeposit.toString() }));
 
-        let guessingOracleBalanceAfter = await getBalance(accounts[2]);
-        assert.isAbove(guessingOracleInitialBalance, guessingOracleBalanceAfter + 100);
+        let scaledAfterBalance = scaleBackBigNumber(await getBalance(accounts[2]), weiDeposit);
+        let scaledBackBefore = scaleBackBigNumber(guessingOracleInitialBalance, weiDeposit);
+
+        assert.isAbove(scaledBackBefore, scaledAfterBalance);
 
         predictionIndex = parseInt(await openPredictionsInstance.getNextIndexForFeed.call(BTCUSDID)) - 1;
         assert.equal(predictionIndex, 0, "there should be one predictions for btcusd");
@@ -60,13 +65,14 @@ contract('OpenPredictions', accounts => {
         assert.equal(predictionValue, 1300, "predicted valued should be 1300");
 
         let depositForOracle = await openPredictionsInstance.getDepositForOracle.call(guessingOracle);
-        assert.equal(depositForOracle, 100, "deposit for oracle should equal 100");
+        assert.equal(depositForOracle.toString(), weiDeposit.toString(), `deposit for oracle should equal ${weiDeposit.toString()} wei.`);
 
-        await openPredictionsInstance.withdraw(90, { from: accounts[2] });
+        await openPredictionsInstance.withdraw(weiDeposit.dividedBy(4).toString(), { from: accounts[2] });
 
         let depositForOracleAfterWithdrawal = await openPredictionsInstance.getDepositForOracle.call(guessingOracle);
-        assert.equal(depositForOracleAfterWithdrawal, 10, "deposit for oracle should equal 10");
+        assert.equal(depositForOracleAfterWithdrawal, weiDeposit.dividedBy(4).multipliedBy(3).toString(), "deposit for oracle should equal 10");
     });
+
 
     test("place many valid predictions so that circular buffer wraps around", async () => {
         let index = parseInt(await openPredictionsInstance.getNextIndexForFeed.call(BTCUSDID));
@@ -78,14 +84,6 @@ contract('OpenPredictions', accounts => {
             let currentValue = await GetCurrentValue(openPredictionsInstance);
             assertCurrentValue(currentValue, 1300 * i, accounts[i % 4]);
         }
-    });
-
-    test("judge contract burns deposits", async () => {
-        assert.equal(0, 1, "test not implemented yet");
-    });
-
-    test("non judge address burns deposits and fails", async () => {
-        assert.equal(0, 1, "test not implemented yet");
     });
 
     test("place Prediction at invalid feed", async () => {

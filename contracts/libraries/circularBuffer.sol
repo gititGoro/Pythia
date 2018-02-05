@@ -14,6 +14,14 @@ library CircularBufferLib {
         self.bufferSize = bufferSize;
     }
 
+    function isEmpty(PredictionRing storage self, address caller) public view returns (bool) {
+        return self.iterator[caller] >= self.values.length || self.oracles[self.iterator[caller]] == address(0);
+    }
+
+    function deleteCurrentPrediction(PredictionRing storage self, address caller) public {
+        self.oracles[self.iterator[caller]] = address(0);
+    }
+
     function insertPrediction(PredictionRing storage self, uint value, address oracle) public {
         if (self.values.length < self.bufferSize) {
             self.values.push(value);
@@ -28,18 +36,23 @@ library CircularBufferLib {
         self.nextIndex = self.nextIndex % self.bufferSize;
     }
 
-    function resetIterator(PredictionRing storage self) public {
-        self.iterator[msg.sender] = self.nextIndex;
+    function resetIterator(PredictionRing storage self, address caller) public {
+        self.iterator[caller] = self.nextIndex;
     }
 
-    function moveIterator (PredictionRing storage self) public {
-        self.iterator[msg.sender]++;
-        self.iterator[msg.sender] = self.iterator[msg.sender] % self.bufferSize;
+    function moveIterator (PredictionRing storage self, address caller) public {
+        self.iterator[caller]++;
+        self.iterator[caller] = self.iterator[caller] % self.values.length;
     }
 
-    function getCurrentValue (PredictionRing storage self) public view returns (uint value, address oracle, uint blocknumber) {
-        value = self.values[self.iterator[msg.sender]];
-        oracle = self.oracles[self.iterator[msg.sender]];
-        blocknumber = self.blocknumbers[self.iterator[msg.sender]];
+    function moveIteratorBackwards(PredictionRing storage self,address caller) public {
+        self.iterator[caller]--;
+        self.iterator[caller] == 0 ?self.values.length:self.iterator[caller];
+    }
+
+    function getCurrentValue (PredictionRing storage self, address caller) public view returns (uint value, address oracle, uint blocknumber) {
+        value = self.values[self.iterator[caller]];
+        oracle = self.oracles[self.iterator[caller]];
+        blocknumber = self.blocknumbers[self.iterator[caller]];
     }
 }

@@ -37,21 +37,32 @@ contract Judge is AccessRestriction {
        uint8 requiredNumberOfOracles = feedMaster.getNumberOfOracles(feedId);
        address[] memory oracles = new address[](requiredNumberOfOracles);
        uint[] memory values = new uint[](requiredNumberOfOracles);
-       uint i = openPredictions.getNextIndexForFeed(feedId);
+       openPredictions.resetPredictionIterator(feedId, msg.sender);
+       openPredictions.movePredictionIteratorBackwards(feedId, msg.sender);
        uint[3] memory rangeOfPredictions = [2**256-1,0,0]; 
-       for (;i>0 && requiredNumberOfOracles>0;i--) {
-            address currentOracle = openPredictions.getPredictionOracleForFeedIdAtIndex(feedId,i);
+       
+       for (uint8 i = requiredNumberOfOracles*10;i > 0 && requiredNumberOfOracles > 0; i--) { //if one address spams too much then no one is rewarded.
+            if (openPredictions.isCurrentPredictionEmpty(feedId,msg.sender)) {
+                  openPredictions.movePredictionIteratorBackwards(feedId, msg.sender);
+                  continue;
+            }
+            uint currentIterator = openPredictions.getCurrentIterator(feedId, msg.sender);
+            if (!openPredictions.validateBlockNumberForFeedIdAtIndex(feedId,currentIterator,lastBlock)) { //prediction too old
+                continue;
+            }
+
+            address currentOracle = openPredictions.getPredictionOracleForFeedIdAtIndex(feedId, currentIterator);
             
             for (uint j = 0; j<oracles.length;j++) {
-            if (oracles[j]==currentOracle)
-                continue;
+                if (oracles[j]==currentOracle || oracles[j] == address(0))
+                    continue;
             }
             //next we check if the oracle has skin in the game
             if (feedMaster.getRewardByFeedId(feedId)/requiredNumberOfOracles > openPredictions.getDepositForOracle(currentOracle)) {
                 continue;
             }
             oracles[i] = currentOracle;
-            values[i] = openPredictions.getPredictionValueForFeedIdAtIndex(feedId,i);
+            values[i] = openPredictions.getPredictionValueForFeedIdAtIndex(feedId, currentIterator);
             if (values[i]<rangeOfPredictions[0]) {
                 rangeOfPredictions[0] = values[i];
             } else if (values [i] > rangeOfPredictions[1]) {
@@ -59,15 +70,15 @@ contract Judge is AccessRestriction {
             }
             rangeOfPredictions[2] += values[i];
             requiredNumberOfOracles--;
+            openPredictions.deleteCurrentPrediction(feedId, msg.sender); //ensures oracle can't be rewarded eternally
+            openPredictions.movePredictionIteratorBackwards(feedId, msg.sender);
        }
-
-        if (!openPredictions.validateBlockNumberForFeedIdAtIndex(feedId,i+1,lastBlock)) {
-           return;
-        }
+        if (requiredNumberOfOracles > 0) //either there are too few predictions or someone is spamming the feed.
+            return;
 
        if (rangeOfPredictions[1] - rangeOfPredictions[0] > feedMaster.getMaxRangeByFeedId (feedId)) {
            //EVENT NOT SUCCESS
-            openPredictions.burnDeposits (oracles, feedMaster.getRewardByFeedId(feedId)/requiredNumberOfOracles);
+            openPredictions.queueBurnDeposits (oracles, feedMaster.getRewardByFeedId(feedId)/requiredNumberOfOracles);
             return;
        }
 
