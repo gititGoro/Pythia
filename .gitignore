@@ -3,5 +3,4 @@ build/
 TransactionResultstructure.json
 node_modules/
 ssh/
-diagrams/
 guide-*.js
