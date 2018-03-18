@@ -37,7 +37,7 @@ library CircularBufferLib {
     }
 
     function resetIterator(PredictionRing storage self, address caller) public {
-        self.iterator[caller] = self.nextIndex;
+        self.iterator[caller] = (self.nextIndex-1) % self.bufferSize;
     }
 
     function moveIterator (PredictionRing storage self, address caller) public {

@@ -36,11 +36,7 @@ contract('OpenPredictions', accounts => {
 
             }).then(() => {
                 done();
-                // return kreshmoiHistoryInstance.setDependencies(judgeInstance.address, feedMasterInstance.address);
-            })/*.then(() => {
-                return judgeInstance.setDependencies(feedMasterInstance.address, openPredictionsInstance.address, kreshmoiHistoryInstance.address);
             })
-            .then(() => { console.log("before: setup complete"); done(); })*/
             .catch(error => done(error));
     });
 
@@ -75,11 +71,8 @@ contract('OpenPredictions', accounts => {
 
 
     test("place many valid predictions so that circular buffer wraps around", async () => {
-        //TODO: use pen and paper to fix
         let index = parseInt(await openPredictionsInstance.getNextIndexForFeed.call(BTCUSDID));
-        // for (let i = 0; i < accounts.length; i++) {
-        //     await openPredictionsInstance.resetPredictionIterator(BTCUSDID, accounts[0]);
-        //   }
+             await openPredictionsInstance.resetPredictionIterator(BTCUSDID, accounts[0]);
 
         for (let i = index + 1; i <= 25; i++) {
             await (openPredictionsInstance.placePrediction(BTCUSDID, 1300 * i, { from: accounts[(i) % accounts.length], value: 100 }));
@@ -87,7 +80,6 @@ contract('OpenPredictions', accounts => {
             assert.equal(index, i % 20, "expected index to wrap around");
             await openPredictionsInstance.movePredictionIterator(BTCUSDID, accounts[0]);
             let currentValue = await openPredictionsInstance.getCurrentPredictionValue(BTCUSDID, accounts[0]);
-            console.log(currentValue[0].toString());
             assertCurrentValue(currentValue, 1300 * i, accounts[index % accounts.length], "i: " + i);
         }
     });
