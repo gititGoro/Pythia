@@ -44,7 +44,7 @@ contract OpenPredictions is AccessRestriction {
     }
 
     function getCurrentPredictionValue (uint feedId, address caller) public view returns (uint, address, uint) {
-       return predictions[feedId].getCurrentValue(caller);
+        return predictions[feedId].getCurrentValue(caller);
     }
 
     function placePrediction(uint feedId, uint value) public payable {
@@ -56,15 +56,15 @@ contract OpenPredictions is AccessRestriction {
             predictions[feedId].init(predictionRBufferSize);
         }
 
-         predictions[feedId].insertPrediction(value, msg.sender);
+        predictions[feedId].insertPrediction(value, msg.sender);
     }
 
     function deleteCurrentPrediction (uint feedId, address caller) public {
-            predictions[feedId].deleteCurrentPrediction(caller);
+        predictions[feedId].deleteCurrentPrediction(caller);
     }
 
     function isCurrentPredictionEmpty(uint feedId, address caller) public view returns (bool) {
-            return predictions[feedId].isEmpty(caller);
+        return predictions[feedId].isEmpty(caller);
     }
 
     function getNextIndexForFeed(uint feedId) public view returns (uint index) {
@@ -80,28 +80,28 @@ contract OpenPredictions is AccessRestriction {
     }
 
     function validateBlockNumberForFeedIdAtIndex (uint feedId, uint index, uint cutoffblock) public view returns (bool) {
-          return predictions[feedId].blocknumbers[index]>cutoffblock; 
+        return predictions[feedId].blocknumbers[index]>cutoffblock; 
     }
 
     function getDepositForOracle (address oracle) public view returns (uint) {
-            return deposits[oracle];
+        return deposits[oracle];
     }
 
     function queueBurnDeposits (address[] oracles, uint amount) public {
-            require (msg.sender == judgeAddress);
+        require (msg.sender == judgeAddress);
            
-            BurnQueueItem memory item = BurnQueueItem({
-                addressesToBurn:oracles,
-                amount:amount
+        BurnQueueItem memory item = BurnQueueItem({
+            addressesToBurn:oracles,
+            amount:amount
             });
-            burnQueue.push(item);
+        burnQueue.push(item);
     }
 
     function advanceBurnQueue(uint numberOfItems) public {
         numberOfItems = numberOfItems > burnQueue.length ? burnQueue.length : numberOfItems;
         for (numberOfItems--;numberOfItems>=0;numberOfItems--) {
             for (uint j = 0; j<burnQueue[numberOfItems].addressesToBurn.length;j++) {
-               deposits[burnQueue[numberOfItems].addressesToBurn[j]] -= burnQueue[numberOfItems].amount;
+                    deposits[burnQueue[numberOfItems].addressesToBurn[j]] -= burnQueue[numberOfItems].amount;
             }
             burnQueue.length--;
         }   
