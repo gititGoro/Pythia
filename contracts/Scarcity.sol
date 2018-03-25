@@ -27,7 +27,7 @@ contract Scarcity is PushERC20, AccessRestriction {
     uint currentLockTick;
     uint[] multiplicativeFactors;
 
-    function FixedSupplyToken() public {
+    function Scarcity() public {
         symbol = "SCARCITY";
         name = "Scarcity";
         decimals = 18;
@@ -36,6 +36,10 @@ contract Scarcity is PushERC20, AccessRestriction {
         Transfer(address(0), owner, supply); //on upgrade to 4.21, add emit keywordc
         currentLockTick = 0;
         multiplicativeFactors.push(1);
+    }
+
+    function () payable public { 
+        revert();
     }
 
     function amplifyBalances (uint factor) onlyOwner public {
