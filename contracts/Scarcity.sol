@@ -3,6 +3,7 @@ import "./interfaces/PushERC20.sol";
 import "./AccessRestriction.sol";
 import "./libraries/SafeMath.sol";
 import "./interfaces/NotifiableTokenHolder.sol";
+import "./storage/ScarcityStore.sol";
 
 contract Scarcity is PushERC20, AccessRestriction {
     using SafeMath for uint;
@@ -25,7 +26,7 @@ contract Scarcity is PushERC20, AccessRestriction {
     //This gets around the "too little change" problem that deflationary currecies experience
     mapping (address=>uint) iteration;
     uint currentLockTick;
-    uint[] multiplicativeFactors;
+    address store;
 
     function Scarcity() public {
         symbol = "SCARCITY";
@@ -35,22 +36,26 @@ contract Scarcity is PushERC20, AccessRestriction {
         balances[owner] = supply;
         Transfer(address(0), owner, supply); //on upgrade to 4.21, add emit keywordc
         currentLockTick = 0;
-        multiplicativeFactors.push(1);
     }
 
+    function SetScarcityStore(address scarcityStore) public {
+        ScarcityStore(store).changeOwner(this);
+        store = scarcityStore;
+    }
     function () payable public { 
         revert();
     }
 
+
     function amplifyBalances (uint factor) onlyOwner public {
         require (factor * supply <= 100000000 * 10**uint(decimals));
-        multiplicativeFactors.push(factor);
+        ScarcityStore(store).pushMultiplicativeFactor(factor);       
         currentLockTick = currentLockTick.add(1);
     }
 
     function scaleCurrentBalance () public {
-        for (uint i = iteration[msg.sender]+1; i<multiplicativeFactors.length; i++) {
-            balances[msg.sender] = balances[msg.sender].mul(multiplicativeFactors[i]);
+        for (uint i = iteration[msg.sender]+1; i < ScarcityStore(store).getMultiplicativeFactorLength(); i++) {
+            balances[msg.sender] = balances[msg.sender].mul(ScarcityStore(store).multiplicativeFactors(i));
             iteration[msg.sender] = iteration[msg.sender].add(1);
         }
     }
