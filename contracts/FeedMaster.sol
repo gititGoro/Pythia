@@ -1,74 +1,38 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.17;
 import "./AccessRestriction.sol";
 
 contract FeedMaster is AccessRestriction {
     struct FeedTemplate {
-        uint reward; //wei
         uint8 decimalPlaces;
-        uint8 numberOfOracles;
         uint maxRange;
         string feedName;
-        string description;
+        address owner;
+        uint8 minBlockInterval;
+        uint8 maxBlockInterval;
+        uint creationDate; //block.timestamp of feed creation
+        uint8 epochSize; // number of hours per epoch, counting from creationDate
     }
-    //TODO: have a way to clear out unpopular feeds
-    uint balance;
     mapping (string => uint[]) feedIDmapping;
 
     FeedTemplate[] feeds;
 
-    function pushNewFeed(uint8 decimalPlaces, uint8 numberOfOracles,uint maxRange, string feedName, string description) public payable {
-            require (msg.value>0);
-            balance += msg.value;
-            feedIDmapping[feedName].push(feeds.length);
-            FeedTemplate memory template = FeedTemplate({
-                reward: msg.value,
-                decimalPlaces:decimalPlaces,
-                numberOfOracles: numberOfOracles,
-                maxRange: maxRange,
-                feedName:feedName,
-                description:description
+    function pushNewFeed(uint8 decimalPlaces, uint maxRange, string feedName, uint8 minInterval, uint8 maxInterval, uint8 epochSize) public {
+        feedIDmapping[feedName].push(feeds.length);
+        FeedTemplate memory template = FeedTemplate({
+            decimalPlaces:decimalPlaces,
+            maxRange: maxRange,
+            feedName:feedName,
+            minBlockInterval:minInterval,
+            maxBlockInterval:maxInterval,
+            creationDate: block.timestamp,
+            epochSize:epochSize,
+            owner: msg.sender
             });
 
-            feeds.push(template);
+        feeds.push(template);
     }
 
     function getIDsForFeed(string feedName) public view returns (uint[]) {
         return feedIDmapping[feedName];
     }
-
-    function getFeedById (uint id) public view returns (string feedName, uint reward, uint maxRange,  uint8 decimalPlaces, uint8 numberOfOracles, string description) {
-        feedName = feeds[id].feedName;
-        reward = feeds[id].reward;
-        maxRange = feeds[id].maxRange;
-        numberOfOracles = feeds[id].numberOfOracles;
-        decimalPlaces = feeds[id].decimalPlaces;
-        description = feeds[id].description;
-    }
-
-    function isValidFeed(uint id) public view returns (bool) {
-        return id < feeds.length;
-    }
-
-    function withDraw() public {
-        uint balanceToSend = balance;
-        balance = 0;
-        owner.transfer(balanceToSend);
-    }
-
-    function getRewardByFeedId (uint id) public view returns (uint reward) {
-        reward = feeds[id].reward;
-    }
-
-     function getDecimalPlacesByFeedId (uint id) public view returns (uint8 decimalPlaces) {
-         decimalPlaces = feeds[id].decimalPlaces;
-    }
-
-    function getNumberOfOracles (uint id) public view returns (uint8 numberOfOracles) {
-         numberOfOracles = feeds[id].numberOfOracles;
-    }
-
-    function getMaxRangeByFeedId (uint id) public view returns (uint range) {
-        range = feeds[id].maxRange;
-    }
-
 }

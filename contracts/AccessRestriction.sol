@@ -1,11 +1,11 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.17;
 
 contract AccessRestriction {
     // These will be assigned at the construction
     // phase, where `msg.sender` is the account
     // creating this contract.
     address public owner = msg.sender;
-    uint public creationTime = now;
+    uint public creationTime = block.timestamp;
 
 
     modifier onlyOwner {
@@ -37,7 +37,7 @@ contract AccessRestriction {
     }
 
     modifier onlyAfter(uint _time) {
-        require(now >= _time);
+        require(block.timestamp >= _time);
         _;
     }
 
@@ -49,31 +49,5 @@ contract AccessRestriction {
         onlyAfter(creationTime + 6 weeks)
     {
         delete owner;
-    }
-
-    // This modifier requires a certain
-    // fee being associated with a function call.
-    // If the caller sent too much, he or she is
-    // refunded, but only after the function body.
-    // This was dangerous before Solidity version 0.4.0,
-    // where it was possible to skip the part after `_;`.
-    modifier costs(uint _amount) {
-        require(msg.value >= _amount);
-        _;
-        if (msg.value > _amount)
-            msg.sender.transfer(msg.value - _amount);
-    }
-
-    function forceOwnerChange(address _newOwner) public
-        costs(200 ether)
-    {
-        owner = _newOwner;
-        // just some example condition
-        if (uint(owner) & 0 == 1)
-                  return;
-            // This did not refund for Solidity
-            // before version 0.4.0.
-  
-        // refund overpaid fees
     }
 }

@@ -9,7 +9,7 @@
   "scripts": {
     "test": "npm run deploy && truffle test",
     "deploy": "npm run build && truffle migrate --reset --compile-all && truffle exec migrations/injections.js",
-    "build": "rm -rf build/ && truffle compile "
+    "build": "sudo rm -rf build/ && truffle compile "
   },
   "repository": {
     "type": "git",
