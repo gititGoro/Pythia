@@ -4,5 +4,5 @@ import "./ERC20.sol";
 
 contract PushERC20 is ERC20 {
 
-    function TransferAndNotify(address to, uint value) public returns (bool);
+    function transferAndNotify(address to, uint value) public returns (bool);
 }

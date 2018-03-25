@@ -15,9 +15,15 @@ contract PythiaBank is Bank, AccessRestriction {
     mapping(address => mapping(address => mapping(address=>uint))) public lockedERC20;
     //lockedEther[lockingcontract][user]
     mapping(address => mapping(address => uint)) public lockedEther;
+    mapping(address => uint) public totalERC20deposit;
 
+    function() public payable{
+        unfetteredEtherBalances[msg.sender].add(msg.value);
+    }
     function NotifyOnReceipt(address from, address tokenContract, uint amount) public {
-        unfetteredERC20Balances[tokenContract][from] = amount;
+        require (ERC20(tokenContract).balanceOf(this)-totalERC20deposit[tokenContract]>amount);
+        unfetteredERC20Balances[tokenContract][from] = unfetteredERC20Balances[tokenContract][from].add(amount);
+        unfetteredERC20Balances[tokenContract][from] = totalERC20deposit[tokenContract].add(amount);
     }
 
     function GrantControlToContract (address authority) onlyOwner public  {
@@ -33,11 +39,11 @@ contract PythiaBank is Bank, AccessRestriction {
         require (authorizedContracts[msg.sender] = true);
         if(tokenContract == address(0)) {
             require(unfetteredEtherBalances[user] >= amount);
-            lockedEther[msg.sender][user].add(amount);
+            lockedEther[msg.sender][user] = lockedEther[msg.sender][user].add(amount);
         } else {
             require(unfetteredERC20Balances[tokenContract][user] >= amount);
-            lockedERC20[tokenContract][msg.sender][user].add(amount);
-            unfetteredERC20Balances[tokenContract][user].sub(amount);
+            lockedERC20[tokenContract][msg.sender][user] = lockedERC20[tokenContract][msg.sender][user].add(amount);
+            unfetteredERC20Balances[tokenContract][user] = unfetteredERC20Balances[tokenContract][user].sub(amount);
         }
     }
 
@@ -45,12 +51,12 @@ contract PythiaBank is Bank, AccessRestriction {
         require (authorizedContracts[msg.sender] = true);
         if(tokenContract == address(0)) {
             require(lockedEther[msg.sender][user] >= amount);
-            lockedEther[msg.sender][user].sub(amount);
-            unfetteredEtherBalances[user].add(amount);
+            lockedEther[msg.sender][user] = lockedEther[msg.sender][user].sub(amount);
+            unfetteredEtherBalances[user] = unfetteredEtherBalances[user].add(amount);
         } else {
             require(lockedERC20[tokenContract][msg.sender][user] >= amount);
-            unfetteredERC20Balances[tokenContract][user].add(amount);
-            lockedERC20[tokenContract][msg.sender][user].sub(amount);
+            unfetteredERC20Balances[tokenContract][user] = unfetteredERC20Balances[tokenContract][user].add(amount);
+            lockedERC20[tokenContract][msg.sender][user] = lockedERC20[tokenContract][msg.sender][user].sub(amount);
         }
     }
 
@@ -58,11 +64,11 @@ contract PythiaBank is Bank, AccessRestriction {
     function Withdraw(address user, uint amount, address tokenContract) public {
         if(tokenContract == address(0)) {
             require(unfetteredEtherBalances[user] >= amount);
-            unfetteredEtherBalances[user].sub(amount);
+            unfetteredEtherBalances[user] = unfetteredEtherBalances[user].sub(amount);
             user.transfer(amount);
         } else {
             require(unfetteredERC20Balances[tokenContract][user] >= amount);
-            unfetteredERC20Balances[tokenContract][user].sub(amount);
+            unfetteredERC20Balances[tokenContract][user] = unfetteredERC20Balances[tokenContract][user].sub(amount);
             ERC20(tokenContract).transfer(user, amount);
         }
     }
@@ -71,11 +77,11 @@ contract PythiaBank is Bank, AccessRestriction {
         require (authorizedContracts[msg.sender] = true);
         if(tokenContract == address(0)) {
             require(lockedEther[msg.sender][user] >= amount);
-            lockedEther[msg.sender][user].sub(amount);
+            lockedEther[msg.sender][user] = lockedEther[msg.sender][user].sub(amount);
             address(0).transfer(amount);
         } else {
             require(lockedERC20[tokenContract][msg.sender][user] >= amount);
-            lockedERC20[tokenContract][msg.sender][user].sub(amount);
+            lockedERC20[tokenContract][msg.sender][user] = lockedERC20[tokenContract][msg.sender][user].sub(amount);
             ERC20(tokenContract).transfer(address(0),amount);
         }
     }
