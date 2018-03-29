@@ -1,8 +1,8 @@
 pragma solidity ^0.4.17;
-import "../AccessRestriction.sol";
+import "../baseContracts/AccessControlled.sol";
 import "../libraries/SafeMath.sol";
 
-contract ScarcityStore is AccessRestriction {
+contract ScarcityStore is AccessControlled {
     using SafeMath for uint;
     mapping (address => uint) public balances;
     //the following 3 variables allow scarcity balances to be scaled.

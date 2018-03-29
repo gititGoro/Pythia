@@ -1,10 +1,10 @@
 pragma solidity ^0.4.17;
 import "./interfaces/Bank.sol";
-import "./AccessRestriction.sol";
+import "./baseContracts/AccessControlled.sol";
 import "./libraries/SafeMath.sol";
 import "./interfaces/ERC20.sol";
 
-contract PythiaBank is Bank, AccessRestriction {
+contract PythiaBank is Bank, AccessControlled {
     
     using SafeMath for uint;
 
@@ -85,5 +85,4 @@ contract PythiaBank is Bank, AccessRestriction {
             ERC20(tokenContract).transfer(address(0),amount);
         }
     }
-
 }

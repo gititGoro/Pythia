@@ -1,10 +1,12 @@
 pragma solidity ^0.4.17;
+
+import "./baseContracts/AccessControlled.sol";
+import "./baseContracts/AccessController.sol";
 import "./interfaces/PushERC20.sol";
-import "./AccessRestriction.sol";
 import "./interfaces/NotifiableTokenHolder.sol";
 import "./storage/ScarcityStore.sol";
 
-contract Scarcity is PushERC20, AccessRestriction {
+contract Scarcity is PushERC20, AccessControlled {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
 
@@ -30,10 +32,10 @@ contract Scarcity is PushERC20, AccessRestriction {
     }
 
     function SetScarcityStore(address scarcityStore) public {
-        ScarcityStore(store).changeOwner(this);
+        AccessController(accessControllerContract).setOwnership(this, scarcityStore);
         store = scarcityStore;
         ScarcityStore(store).ResetOwnerBalance(msg.sender);
-        Transfer(address(0), owner, ScarcityStore(store).supply());
+        Transfer(address(0), AccessController(accessControllerContract).getOwner(this), ScarcityStore(store).supply());
     }
     function () payable public { 
         revert();

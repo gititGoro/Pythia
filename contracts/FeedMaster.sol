@@ -1,7 +1,7 @@
 pragma solidity ^0.4.17;
-import "./AccessRestriction.sol";
+import "./baseContracts/AccessControlled.sol";
 
-contract FeedMaster is AccessRestriction {
+contract FeedMaster is AccessControlled {
     struct FeedTemplate {
         uint8 decimalPlaces;
         uint maxRange;
