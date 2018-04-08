@@ -28,7 +28,7 @@ contract Scarcity is PushERC20, AccessControlled {
         symbol = "SCARCITY";
         name = "Scarcity";
         decimals = 18;
-        AccessController(accessControllerContract).setOwnership(this, scarcityStore);
+       
         store = scarcityStore;
         ScarcityStore(store).ResetOwnerBalance(msg.sender);
         Transfer(address(0), AccessController(accessControllerContract).getOwner(this), ScarcityStore(store).supply());

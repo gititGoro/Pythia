@@ -10,13 +10,18 @@ let expectThrow = require("./helpers/expectThrow.js").handle;
 let getBalance = async.getBalancePromise;
 
 contract('PythiaBank', accounts => {
-    var pythiaBankInstance, accessControllerInstance, scarcityInstance;
+    var pythiaBankInstance, accessControllerInstance, scarcityStoreInstance, scarcityInstance;
 
-    let initializer = async () => {
+    let initializer = async () => {//TODO: move to injections or another migration script
         accessControllerInstance = await accessController.deployed();
         pythiaBankInstance = await pythiaBank.deployed();
-
-        scarcityInstace = await scarcityInstance.deployed();
+        await pythiaBankInstance.setAccessController(accessControllerInstance.address);
+        scarcityStoreInstance = await scarcityStore.deployed();
+        await scarcityStoreInstance.setAccessController(accessControllerInstance.address);
+        scarcityInstance = await scarcity.deployed();
+        await scarcityInstance.setAccessController(accessControllerInstance.address);
+        accessControllerInstance.setOwnership(scarcityInstance.address, scarcityStore.address);
+        await scarcityInstance.SetScarcityStore(scarcityStoreInstance.address);
     }
 
     before((done) => {
