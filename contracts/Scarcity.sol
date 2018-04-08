@@ -24,14 +24,10 @@ contract Scarcity is PushERC20, AccessControlled {
     //This gets around the "too little change" problem that deflationary currecies experience
     address store;
 
-    function Scarcity() public {
+    function SetScarcityStore(address scarcityStore) public {
         symbol = "SCARCITY";
         name = "Scarcity";
         decimals = 18;
-        //on upgrade to 4.21, add emit keywordc
-    }
-
-    function SetScarcityStore(address scarcityStore) public {
         AccessController(accessControllerContract).setOwnership(this, scarcityStore);
         store = scarcityStore;
         ScarcityStore(store).ResetOwnerBalance(msg.sender);
@@ -84,7 +80,25 @@ contract Scarcity is PushERC20, AccessControlled {
         NotifiableTokenHolder(to).NotifyOnReceipt(msg.sender, this, value);
     }
 
-    function allowance(address owner, address spender) public view returns (uint256);
-    function transferFrom(address from, address to, uint256 value) isScaled public returns (bool);
-    function approve(address spender, uint256 value) public returns (bool);
+    function allowance(address owner, address spender) public view returns (uint256){
+        return ScarcityStore(store).getAllotment(owner,spender);
+    }
+
+    function transferFrom(address from, address to, uint256 value) isScaled public returns (bool){
+        require(to != address(0));
+    
+        ScarcityStore(store).validateBalance(from,value);
+        ScarcityStore(store).BalanceDecrement(from,value);
+        ScarcityStore(store).BalanceIncrement(to,value);
+
+        ScarcityStore(store).reduceAllotment(from,msg.sender,value);
+       
+        Transfer(from, to, value);
+        return true;
+    }
+    function approve(address spender, uint256 value) public returns (bool){
+        ScarcityStore(store).setAllotment(msg.sender,spender,value);
+        Approval(msg.sender, spender, value);
+        return true;
+    }
 }

@@ -5,6 +5,7 @@ import "../libraries/SafeMath.sol";
 contract ScarcityStore is AccessControlled {
     using SafeMath for uint;
     mapping (address => uint) public balances;
+    mapping (address => mapping (address => uint256)) internal allowed;
     //the following 3 variables allow scarcity balances to be scaled.
     //if the supply falls too low, a new factor is set. All users are frozen
     //until they call scaleCurrentBalances.
@@ -13,8 +14,29 @@ contract ScarcityStore is AccessControlled {
     uint public currentLockTick;
     uint[] public multiplicativeFactors;
     uint public supply;
-    function ScarcityStore () public {
-        supply = 100000000 * 10**uint(18);
+
+    function initializeSupply(uint s) onlyOwner public {
+        if(s==0)
+         supply = 100000000 * 10**uint(18);
+            else
+         supply = s;
+    }
+
+    function reduceAllotment(address from, address to, uint value) onlyOwner public {
+        require(value <= allowed[from][to]);
+        allowed[from][to] = allowed[from][to].sub(value);
+    }
+
+    function getAllotment(address owner, address spender) public view returns (uint){
+        return allowed[owner][spender];
+    }
+
+    function setAllotment(address from, address to, uint value) onlyOwner public {
+        allowed[from][to] = value;
+    }
+
+    function validateBalance (address sender, uint value) onlyOwner public view {
+        require(value <= balances[sender]);
     }
 
     function IncrementSupply(uint value) onlyOwner public {
@@ -27,6 +49,10 @@ contract ScarcityStore is AccessControlled {
 
     function ResetOwnerBalance (address scarcityOwner) onlyOwner public {
         balances[scarcityOwner] = supply;
+    }
+
+    function BalanceSet(address to, uint value) onlyOwner public {
+        balances[to] = value;
     }
 
     function BalanceIncrement(address to, uint value) onlyOwner public {

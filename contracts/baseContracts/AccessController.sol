@@ -6,10 +6,6 @@ contract AccessController is AccessRestriction  {
     
     mapping (address => address) ownedToOwner;
 
-    function AccessController()  internal {
-      // constructor
-    }
-
     function setOwnership(address owner, address owned) onlyOwner public {
         ownedToOwner[owned] = owner;
     }

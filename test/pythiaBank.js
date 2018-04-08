@@ -1,21 +1,36 @@
 let BigNumber = require('bignumber.js');
 let scaleBackBigNumber = (number, factor) => parseInt(number.dividedBy(factor).toString());
 let pythiaBank = artifacts.require("PythiaBank");
+let accessController = artifacts.require("AccessController");
+let scarcity = artifacts.require("Scarcity");
+let scarcityStore = artifacts.require("ScarcityStore");
 let async = require("./helpers/async.js");
 let test = async.test;
-let beforeTest = require("./helpers/async.js").beforeTest;
 let expectThrow = require("./helpers/expectThrow.js").handle;
 let getBalance = async.getBalancePromise;
 
 contract('PythiaBank', accounts => {
-    var pythiaBankInstance;
+    var pythiaBankInstance, accessControllerInstance, scarcityInstance;
+
+    let initializer = async () => {
+        accessControllerInstance = await accessController.deployed();
+        pythiaBankInstance = await pythiaBank.deployed();
+
+        scarcityInstace = await scarcityInstance.deployed();
+    }
+
     before((done) => {
-        pythiaBank.deployed()
-            .then(instance => {
-                pythiaBankInstance = instance;
-                done();
-            })
+        initializer()
+            .then(done)
             .catch(error => done(error));
+    });
+
+    test("send ether triggers callback function that stores deposit", async () => {
+
+    });
+
+    test("sending scarcity with notify call stores deposit", async () => {
+
     });
 
     assertCurrentValue = (value, amount, account, message = "") => {
