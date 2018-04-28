@@ -16,7 +16,7 @@ Since the reliance on external, often human, actors is necessary for a smart con
 The first is a robust market place of oracles who are require to stake deposits before selling information. The market is regulated by a decentralized, blockchain based judicial system. The second is to establish blockchain feeds which are independent and agnostic of particular sources. For instance, when establishing a feed for the latest Eth/USD price, the feed specifies accuracy and frequency but does not require oracles to reveal their sources. So long as the oracles provide reliable and accurate data, the dispute layer will act to objectively verify the integrity of the data when necessary, negating the need to rely on well known APIs.
 
 # The Name
-The name Pythia (pronounced pie-thee-uh) refers to a period of divination in Ancient Greece (@pythiaorigin). Pythia was a title given to an Oracle of the god Apollo. The Pythia was a *replaceable* figure who would change from generation to generation, selected from a sample of priestesses. As such, though a particular Pythia might leave or die, the institution of Pythia was robust and lasted many centuries. The name itself refers to the monstrous python slain by Apollo and and evokes imagery of a multi-headed beast, with no central point of failure.
+The name Pythia (pronounced pie-thee-uh) refers to a period of divination in Ancient Greece (@pythiaorigin). Pythia was a title given to an Oracle of the god Apollo. The Pythia was a *replaceable* figure who would change from generation to generation, selected from a sample of priestesses. As such, though a particular Pythia might leave or die, the institution of Pythia was robust and lasted many centuries. The name itself refers to the monstrous python slain by Apollo and evokes imagery of a multi-headed beast, with no central point of failure.
 While individual Pythia weren't as revered as the Oracle of Delphi, the institution of Pythia was so respected and entrenched that many Greek scholars neglected to explain the term when referencing one. In a similar way, the platform Pythia does not rely on the reputation of esteemed APIs but instead establishes a chain of replaceable oracles who are disciplined by the mechanics of the ecosystem to provide a trustworthy institution of blockchain datafeeds. APIs will come and go but Pythia will endure.
 
 # The Oracle Dilemma
@@ -75,7 +75,7 @@ Once desired feeds are established, would-be oracles can peruse the Feed contrac
         Precision: 0,
         MarginOfError:0,
         Name: "REPS",
-        Description: "number of republicans elected to the current House of Representatives",
+        Description: "number of republicans elected to the House of Representatives",
         Frequency: 10,
         MinumumSuccess:100,
         EpochSpan:2500,
@@ -113,7 +113,7 @@ A smart contract relying on a feed will not be able to forecast the list of orac
 # Bounty Auctions
 Since oracles need to be compensated for the time and gas they spend supplying data, consumers of data can offer bounties per epoch (denominated in ether or an ERC20 token). If an oracle supplies data for the duration of the epoch and is not contested in the judicial overview system then they may withdraw the bounty reward. If more than 1 consumer offers a bounty, the value is simply added to the jackpot.
 
-# Feed Bounties - consumer economics
+# Feed Bounties and Consumer Economics
 Certain feeds may be so important that communities of consumers arise who essentially crowdfund bounties, ensuring the continued integrity of a feed. In other cases, one consumer may have such a strong need to ensure integrity that all bounties are supplied by them. Other consumers may then simply free ride off of the integrity established by the sole donor consumer. The value and supply of bounties of a feed will therefore be directly proportional to its popularity. The use of the passive oracle model means that one feed can supply 1000s of smart contracts. A feed such as ETHUSD will be so well funded that many smart contract designers will be able to treat it as a permanent source of free information. The average cost of a feed therefore decreases with the number of consumers. Contrast this with an active oracle system where each reliant smart contract has to provide incentive to be activated. The average cost is constant in this case. The blockchain bloat in the active oracle model is a function of the number of consumers but is invariant with use in Pythia. 
 For popular feeds, the effect of Pythia will be to drive down the cost of consuming data and will reduce the redundancy of repeated data on the blockchain.
 
@@ -141,9 +141,13 @@ The **LegalContract** property refers to the address of the deployed contract th
 
 # Attack Vectors
 The attack surface of Pythia is dependent on the vigilance of its users. The non-exhaustive list of attack vectors are:
-1. Drive by shooting: Supply bogus data to an unpopular feed. This risk requires feed authors to establish a known popularity for a feed before relying on the authenticity of its contributors.
-2. Faking a winning streak: An group of colluding oracles can establish a feed and contribute to it, boosting their winning streak allowing them to participate in coveted feeds which have high MinimumSuccess values. Protecting against this is a special case in which users can dispute the very existence of a feed. If a feed is a bogus construct, created to boost the reputation of oracles and cannot be objectively verified, the legal system can delete the feed as well as the winning streak for any oracles which have participated in it.
-3. Dead epochs: A malicious user who wishes to see a feed fail may expend resources bidding on an epoch, only to provide bogus data. The attacker in this case is willing to forfeit their deposit. This is Pythia's equivalent of a 51% attack. Currently there is no obvious solution to this. Instead, since the attack is costly, it should be unsustainable over long periods of time. It is also less likely since a feed is not associated with one company but with a fact of reality such as the gold price in Japanese Yen. The more popular a feed, the more costly it will be to attack, similarly to how the highest value blockchains are the most resilient to 51% attacks.
+
+1. Drive by shooting: An oracle supplies bogus data to an unpopular feed. This risk requires feed authors to establish a known popularity for a feed before relying on the authenticity of its contributors.
+
+2. Faking a winning streak: a group of colluding oracles can establish a feed and contribute to it, boosting their winning streak allowing them to participate in coveted feeds which have high MinimumSuccess values. Protecting against this is a special case in which users can dispute the very existence of a feed. If a feed is a bogus construct, created to boost the reputation of oracles and cannot be objectively verified, the legal system can delete the feed as well as the winning streak for any oracles which have participated in it.
+
+3. Dead epochs: a malicious user who wishes to see a feed fail may expend resources bidding on an epoch, only to provide bogus data. The attacker in this case is willing to forfeit their deposit. This is Pythia's equivalent of a 51% attack. Currently there is no obvious solution to this. Instead, since the attack is costly, it should be unsustainable over long periods of time. It is also less likely since a feed is not associated with one company but with a fact of reality such as the gold price in Japanese Yen. The more popular a feed, the more costly it will be to attack, similarly to how the highest value blockchains are the most resilient to 51% attacks.
+
 
 # Long Term Scaling
 In order to save oracles gas, authors of less popular feeds may wish to establish their feed on a sidechain. Future additions to Pythia will be engineered to allow for feeds to exist on sidechains such as those provided by the Loom Network. For less popular feeds or nice application feeds (such as metrics for online games), it may be desirable to keep the feed out of the mainchain. Conceptually, Pythia naturally allows for offchain scaling. However, as mentioned above, a secondary benefit will be to establish universal sources of truth for popular feeds such as ETHUSD, negating the need for each new smart contract to source its own version of the truth.
