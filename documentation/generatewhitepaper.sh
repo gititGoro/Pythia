@@ -1,1 +1,1 @@
-pandoc --filter pandoc-citeproc --bibliography=documentation/whitepaper.bib --variable classoption=twocolumn --variable papersize=a4paper -s documentation/whitepaper.md -o documentation/whitepaper.pdf
+pandoc --filter pandoc-citeproc --bibliography=documentation/whitepaper.bib --variable classoption=onecolumn --variable papersize=a4paper -s documentation/whitepaper.md -o documentation/whitepaper.pdf

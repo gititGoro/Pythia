@@ -1,54 +1,60 @@
 ---
-title: "Pizza - A Carbohydrate Based Substrate For Tomato Delivery"
-date: "May 2017"
-author: "Maxwell Ogden, Pizza Enthusiasts Institute"
+title: "Pythia - a decentralized market for onchain datafeeds"
+date: "April 2018"
+author: "Justin Goro"
+email: "justingoro@protonmail.com"
 ---
 
 # Abstract
-
-Pizza (@pizza2000identification) is an understudied yet widely utilized implement for delivering in-vivo *Solanum lycopersicum* based liquid mediums in a variety of next-generation mastications studies. Here we describe a de novo approach for large scale *T. aestivum* assemblies based on protein folding that drastically reduces the generation time of the mutation rate.
+The Ethereum blockchain is in need of a source of trustless, censorship-resistant oracles in order to bring to market many of the promises offered by the advent of smart contracts. 
+Until now the design of smart contracts is such that they rely on call backs, triggered by oracles. Ideally, a smart contract should be able to dip into a stream of constantly updated data in order to execute based on external conditions. For instance, an insurance contract that can release funds when a change in financial markets occurs without direct human oversight.
+We offer Pythia as solution designed to elicit reliable, regular data from a source of market disciplined oracles, regulated by the Aragon Court System. One of the innovations of Pythia is to separate the source of data from the stream, allowing the system to avoid building up a fragile reliance on any particular APIs. By requiring both oracles and consumers of data to participate in multi-step auctions for feeds, the most popular feeds will bubble up to become the most reliable, establishing an institution of objective truth that smart contract designers can treat as de facto programming primitives.
 
 # Introduction
-Smart contracts executing on the Ethereum blockchain have no access to events external to the network. As such they rely on external actors (henceforth oracles) to supply external information to smart contracts. Since smart contracts are trustless and uncensorable by default, introducing a reliance on oracles negates this strength of design, precuding certain classes of use cases from existing. Smart contract developers are currently required to choose between designing robust, trustless but ignorant contracts and aware contracts that are vulnerable to both trust based and censorship attacks through their reliance on oracles.
-Since the reliance on external, often human, actors is necessary for a smart contract to access external events, we propose that a market be created which disciplines and decentralizes the supply of oracle data in a manner that protects sources from censorship. Two levels of indirection are required to achieve this. The first is a robust market place of oracles who are require to stake deposits before selling information. The market is regulated by a decentralized, blockchain based judicial system. The second is to establish blockchain feeds which are independent and agnostic of particular sources. For instance, when establishing a feed for the latest Eth/USD price, the feed specifies accuracy and frequency but does not require oracles to reveal their sources. So long as the oracles provide reliable and accurate data, the dispute layer will act to objectively verify the integrity of the data when necessary.
+Smart contracts executing on the Ethereum blockchain have no access to events external to the network. As such, they rely on external actors (henceforth oracles) to supply external information. Since smart contracts are trustless and censorship-resistant by default, introducing a reliance on oracles negates this strength of design, precluding certain classes of use cases. Smart contract developers are currently required to choose between designing robust, trustless but ignorant contracts *and* aware contracts that are vulnerable to both trust based and censorship attacks through their reliance on oracles.
+Since the reliance on external, often human, actors is necessary for a smart contract to access external events, we propose that a market be created which disciplines and decentralizes the supply of oracle data in a manner that protects data from censorship. Two levels of indirection are required to achieve not only censorship resistance but reliability of data integrity. 
+The first is a robust market place of oracles who are require to stake deposits before selling information. The market is regulated by a decentralized, blockchain based judicial system. The second is to establish blockchain feeds which are independent and agnostic of particular sources. For instance, when establishing a feed for the latest Eth/USD price, the feed specifies accuracy and frequency but does not require oracles to reveal their sources. So long as the oracles provide reliable and accurate data, the dispute layer will act to objectively verify the integrity of the data when necessary, negating the need to rely on well known APIs.
 
 # The Name
-The name Pythia refers to a period of divination in Ancient Greece. Pythia was a title given to an Oracle of the god Apollo. The Pythia was a *replacable* figure who would change from generation to generation, selected from a sample of priestesses. As such, though a particular Pythia might leave or die, the institution of Pythia was robust and lasted many centuries. The name itself refers to the monstrous python slain by Apollo and and evokes imagery of a multiheaded beast, with no central point of failure.
-While individual Pythia weren't as revered as the Oracle of Delphi, the institution of Pythia was so respected and entrenched that many Greek scholars neglected to explain the term when referencing one. In a similar way, the platform Pythia does not rely on the reputation of esteemed APIs but instead establishes a chain of replacable oracles who are disciplined by the mechanics of the ecosystem to provide a trustworthy institution of blockchain datafeeds. APIs will come and go but Pythia will endure. <https://en.wikipedia.org/wiki/Pythia>
+The name Pythia (pronounced pie-thee-uh) refers to a period of divination in Ancient Greece (@pythiaorigin). Pythia was a title given to an Oracle of the god Apollo. The Pythia was a *replaceable* figure who would change from generation to generation, selected from a sample of priestesses. As such, though a particular Pythia might leave or die, the institution of Pythia was robust and lasted many centuries. The name itself refers to the monstrous python slain by Apollo and and evokes imagery of a multi-headed beast, with no central point of failure.
+While individual Pythia weren't as revered as the Oracle of Delphi, the institution of Pythia was so respected and entrenched that many Greek scholars neglected to explain the term when referencing one. In a similar way, the platform Pythia does not rely on the reputation of esteemed APIs but instead establishes a chain of replaceable oracles who are disciplined by the mechanics of the ecosystem to provide a trustworthy institution of blockchain datafeeds. APIs will come and go but Pythia will endure.
 
-# The Oracle Dilemma <venn diagram>
-Ethereum and Bitcoin both require the consensus of nodes in order to establish a verifiable source of truth in the form of a blockchain (white paper). As such, it would be impossible for nodes to include data from a source external to the network and still expect every node to verify the correctness of the data in the time it takes to publish a block. Reaching consensus on an API call requires certain layers of trust and introduces a non deterministic element to the construction of each block. For this reason, smart contracts have no native access to external events. Traditional legal contracts between parties reference external events as a matter of course. Yet, until now, trustless smart contracts have acted on nothing but events internal to the blockchain. This has narrowed the scope of possible smart contract design to a class of internally verifiable use cases such as tradeable tokens. While blockchains have been touted to replace traditional financial and insurance mechanisms, their insulation from the external world hinders the realization of this vision. For instance, a simple insurance contract designed to pay farmers in the event of a flood would require a reliable source of weather. While the funds themselves could be secured by multisignature smart contract design, the source of weather would need to be agreed upon, introducing a source of trust and 3rd party intermediation.
+# The Oracle Dilemma
+![alt text](documentation/vennDiagram.png "venn")
+Ethereum and Bitcoin both require the consensus of nodes in order to establish a verifiable source of truth in the form of a blockchain (@bitcoin). As such, it would be impossible for nodes to include data from a source external to the network and still expect every node to verify the correctness of the data in the time it takes to publish a block. Reaching consensus on an API call requires certain layers of trust and introduces a non deterministic element to the construction of each block. For this reason, smart contracts have no native access to external events. Traditional legal contracts between parties reference external events as a matter of course. 
+Yet, until now, trustless smart contracts have acted on nothing but events internal to the blockchain. This has narrowed the scope of possible smart contract design to a class of internally verifiable use cases such as tradeable tokens. While blockchains have been touted to replace traditional financial and insurance mechanisms, their insulation from the external world hinders the realization of this vision. For instance, a simple insurance contract designed to pay farmers in the event of a flood would require a reliable source of weather. While the funds themselves could be secured by multisignature smart contract design, the source of weather would need to be agreed upon, introducing a source of trust and 3rd party intermediation.
 
 # Stable Coins
-The volatility of blockchain tokens has necessitated the need for stable coins, tokens which do not fluctuate wildly when compared to traditional fiat currencies such as the US dollar. The first generations of solutions offered have been to introduce tokens backed by offchain, realworld assets (Digix, Tether). These reserve tokens are vulnerable to censorship attacks through confiscation. The MakerDAO collateralizes all of its assets on chain but the source of price feed is still maintained through a list of trusted oracles. The purpose of Pythia in the stable coin ecosystem will be to replace trusted nodes and oracles with reliable institutions of data flow, independent from the reputation of individual oracles.
+The volatility of blockchain tokens has necessitated the need for stable coins, tokens which do not fluctuate wildly when compared to traditional fiat currencies such as the US dollar. The first generations of solutions offered have been to introduce tokens backed by offchain, real world assets (@Digix). These reserve tokens are vulnerable to censorship attacks through confiscation. The MakerDAO collateralizes all of its assets on chain but the source of price feed is still maintained through a list of trusted oracles. The purpose of Pythia in the stable coin market will be to replace trusted nodes and oracles with reliable institutions of data flow, independent from the reputation of individual oracles.
 
-Once accurate feed sources are established, smart contracts can be designed which reference the feed by its ID, a value that is invariant over time, unlike a list of ever changing oracles. In time, certain feeds will become so established that they will be treated as ethereum primitives in contract design.
+Once accurate feed sources are established, smart contracts can be designed which reference a feed by its ID, a value that is invariant over time, unlike a list of ever changing oracles. In time, certain feeds will become so established that they will be treated as ethereum primitives in contract design.
 
 # Passive and Active Oracles
-The most common type of oracle in existence is the active oracle, primarily because of its simplicity of design. Here, a smart contract designer exposes a public function which an oracle can trigger at will. For instance, an oracle which releases funds when triggered by a particular user will have a release function exposed. While the smart contract designer may specify that this should only happen when certain real world conditions are met, they have no way of enforcing this.
+The most common type of oracle to date is the active oracle, primarily because of its simplicity of design. Here, a smart contract designer exposes a public function which an oracle can trigger at will. For instance, an oracle which releases funds when triggered by a particular user will have a *release()* function exposed. While the smart contract designer may specify that this should only happen when certain real world conditions are met, they have no way of enforcing this.
 
-The second and more indirect type of oracle is the passive oracle. Here, an oracle continuously updates a feed of data on the blockchain. A smart contract can then dip into this feed when needed without alerting the oracle. For instance, suppose an oracle provides and ongoing minute by minute feed of the BTC price in USD. A smart contract is designed to release its funds when the the price falls below $1000. It has a release function. Whenver an actor calls the release function, the smart contract immediately requests the latest price from the BTC price feed contract and acts on it synchronously in the same block.  
+The second and more indirect type of oracle is the passive oracle. Here, an oracle continuously updates a feed of data on the blockchain. A smart contract can then dip into this feed when needed without alerting the oracle. For instance, suppose an oracle provides and ongoing minute by minute feed of the BTC price in USD. A smart contract is designed to release its funds when the the price falls below $1000. It has a *release()* function. Whenever an user calls the release function, the smart contract immediately requests the latest price from the BTC price feed contract and acts on it synchronously in the same block.  
 
-In the case of the active oracle, the workload of the oracle scales linearly with the number of smart contracts deployed which rely on it. It has to trigger functions on every contract when an even occurs. The passive oracle need only supply a regular feed remaining ignorant of the number of dependents on its feed. The number of smart contracts relying on that feed can scale without limit.
+In the case of the active oracle, the workload of the oracle scales linearly with the number of smart contracts deployed which rely on it. It has to trigger functions on every contract when an even occurs. The passive oracle need only supply a regular feed to the blockchain, remaining ignorant of the number of dependents on its feed. The number of smart contracts relying on that feed can scale without limit.
 Pythia establishes a market place of strictly passive oracles.
 
 # Contract Design
-When designing a smart contract to rely on a passive oracle, the designer has to establish first that there is a feed which fits their need and secondly that the feed is being updated with desired frequency. Once these 2 traits are established, the contract can be designed without future upgrading necessary. This contrasts with reliance on active oracles which requires constant vigilance on the reliability of oracles.
-In the case of Pythia, a feed type such as "USD-BTC price" is given a unique ID which contract designers can use to reference its data. The ID will never change, allowing the desinger to hard code the feed into their design. Pythia allows smart contract developers to outsource the establishment of reliable oracle networks.
-Solidy exaple:
+When designing a smart contract to rely on a passive oracle, the designer has to establish first that there is a feed which fits their need and secondly that the feed is being updated with desired frequency. Once these 2 traits are established, the contract can be designed without future upgrading necessary. This contrasts with reliance on active oracles which require constant vigilance from consumers.
+In the case of Pythia, a feed type such as "USD/BTC price" is given a unique ID which contract designers can use to reference its data. The ID will never change, allowing the designer to hard code the feed into their design. Pythia allows smart contract developers to outsource the establishment of reliable oracle networks, saving new projects from first curating an active community.
+
+### Solidy example:
 ```
-    address pythiaPredictionsContract;
+    address pythiaDataFeedContract;
     mapping (address => uint) etherBalances;
 
     //USD-BTC feed has an ID of 12 in the Pythia Feed contract
     function ReleaseFunds () public {
-        if(PythiaPredictions(pythiaPredictionsContract).getLatestFeed(12) < 1000)
+        if(PythiaData(pythiaDataFeedContract).getLatestFeed(12) < 1000)
             msg.sender.transfer(etherBalances[msg.sender]);
     } 
 ``` 
 
 # Game Theory and Source Quality
-Once desired feeds are established, would-be oracles can peruse the feed contract for an exhaustive list of every feed. When querying the Feed contract, an oracle might get back a list such as the one below:
+Once desired feeds are established, would-be oracles can peruse the Feed contract for an exhaustive list of every feed. When querying the Feed contract, an oracle might get back a list such as the one below:
 
 ```
 [
@@ -90,14 +96,13 @@ Once desired feeds are established, would-be oracles can peruse the feed contrac
 ```
 
 ### Explanation of Feed List
-First it should be noted that each feed has a unique ID, established at the time of registration. The precision property refers to the number of decimal places. Since the EVM does not support floating point variables at the time of writing, all oracle data is feed without decimal places. Clients must perform the necessary adjustment based on the precision value.
-Margin of error is invoked only in the case of a dispute. When adjudicating on the accuracy of an oracle's feed, the judiciary will first establish an agreed upon source of truth. After than, if the oracle strayed by less than the margin of error, the feed is considered valid. The participation of oracles in a feed will increase inversely with the margin of error since the risk of penalty is lower but the reliability of the quality of the feed data will suffer as a result. Feed designers must balance these 2 variables to optimize for feed quality and regularity.
-The frequency is the number of predictions required per 10 million blocks (approximately 4 years). This number is used by the judiciary to determine if an oracle participated with the expected frequency.
-Finally, the MinimumSuccess parameter establishes how many feeds an oracle has successfully contributed to before they may contribute to the current feed. In the early days of Pythia, we expect this value to be zero but as oracles establish their track records, certain feeds can be designed to curate only the most reliable oracles. A cheating oracle can have its reputation slashed to zero by the judiciary.
-The last 2 properties will be explained in the subsequent section.
+First it should be noted that each feed has a unique ID, established at the time of registration. The **Precision** property refers to the number of decimal places. Since the EVM does not support floating point variables at the time of writing, all oracle data is fed without decimal places. Clients must perform the necessary adjustment based on the precision value. E.G. If a feed specifies precision of 2 then data fetched by clients must be divided by 100.
+**MarginOfError** is invoked only in the case of a dispute. When adjudicating on the accuracy of an oracle's feed, the judiciary will first establish an agreed upon source of truth. After than, if the oracle strayed by less than the margin of error, the feed is considered valid. The participation of oracles in a feed will increase inversely with the margin of error since the risk of penalty is lower. However, a low **MarginOfError** will call into question the quality of the feed. Feed designers must balance these 2 variables to optimize for feed quality and regularity.
+The **Frequency** is the number of predictions required per 10 million blocks (approximately 4 years). This number is used by the judiciary to determine if an oracle participated with the expected average frequency.
+Finally, the **MinimumSuccess** property establishes how many feeds an oracle is required to have successfully contributed to before they may contribute to the current feed. In the early days of Pythia, we expect this value to be zero but as oracles establish their track records, certain feeds can be designed to curate only the most reliable oracles. A cheating oracle can have its reputation slashed to zero by the judiciary.
+The last 2 properties will be explained in the subsequent section on epochs.
 
-A corrollary of the above design is that popular feeds such as the USD-ETH price can be designed with strict parameters, improving the quality of the information provided. As such, beacon feeds will emerge in the ecoysystem which can be treated as de facto sources of truth for smart contracts. Less popular and more obscure feeds will attract fewer oracles. The reliability of such feeds will be questionably. If the use cases for a particular unpopular feed with lax parameters increase over time, consumers might be tempted to establish a replacement feed with tighter parameters. As such a spectrum of feeds for the same information might emerge in time and offering contract designers a choice between cheap and unreliable feeds or expensive but trustworthy sources. 
-
+A corollary of the above design is that popular feeds such as the USD-ETH price can be designed with strict parameters, improving the quality of the information provided. As such, beacon feeds will emerge in the ecosystem which can be treated as de facto sources of truth for smart contracts. Less popular and more obscure feeds will attract fewer oracles. The reliability of such feeds will be questionable. If the use cases for a particular unpopular feed with lax parameters increase over time, consumers might be tempted to establish a replacement feed with tighter parameters. As such a spectrum of feeds for the same information might emerge in time, offering contract designers a choice between cheap and unreliable feeds or expensive but trustworthy sources. 
 
 # Epochs
 Each feed can only be supplied by one oracle at a time. The current oracle has a tenure that lasts for the duration of blocks as specified by **EpochSpan**. The first epoch starts at the property **StartingBlock**. To secure the right to supply for the duration of an epoch, oracles bid on particular epochs which are numbered in sequence. For instance, if EpochSpan is 1000 and the starting block is 0 then epoch1 is from block 0 to block 999, epoch2 is from block 1000 to block 1999 etc. Oracles will search for empty epochs and bid in an auction a particular epoch, establishing a queue of oracles. For popular feeds, the queue of next oracles will be long enough to guarantee a sufficiently long list of filled epochs. 
@@ -105,7 +110,7 @@ Each feed can only be supplied by one oracle at a time. The current oracle has a
 # Source Ignorance
 A smart contract relying on a feed will not be able to forcast the list of oracles. Participating in Pythia means relinquishing the notion of insisting that data be provided from a particular trusted source. Instead, designers should only trust the incentives and mechanics of the system to regulate the reliability of the data provided.
 
-# Bounty Auctions
+# Bounty Auctionsthia was robust and lasted many
 Since oracles need to be compensated for the time and gas they spend supplying data, consumers of data can offer bounties per epoch (denominated in ether or an ERC20 token). If an oracle supplies data for the duration of the epoch and is not contested in the judicial overview system then they may withdraw the bounty reward. If more than 1 consumer offers a bounty, the value is simply added to the jackpot.
 
 # Feed Bounties - consumer economics
@@ -144,15 +149,7 @@ The attack surface of Pythia is dependent on the vigilance of its users. The non
 In order to save oracles gas, authors of less popular feeds may wish to establish their feed on a sidechain. Future additions to Pythia will be engineered to allow for feeds to exist on sidechains such as those provided by the Loom Network. For less popular feeds or very application specific feeds (such as metrics for online games), it may be desirable to keep the feed out of the mainchain. Conceptually, Pythia naturally allows for offchain scaling. However, as mentioned above, a secondary benefit will be to establish universal sources of truth for popular feeds such as ETHUSD, negating the need for each new smart contract to source its own version of the truth. 
 
 # Conclusion
-
-
-
-# Diagram
-
-![It's Pizza](https://gist.github.com/maxogden/97190db73ac19fc6c1d9beee1a6e4fc8/raw/adaaa9b5c19460d3be42021ef0c1b8e11a8d38fe/pizza.png)
-
-# Algorithm
-
-$$f(x)=pizza^2$$
+We have shown that the Ethereum Blockchain is in need of a class of oracle that is censorship resistant, trustless and passive. Pythia is offered as a game-theoretically robust market solution which offers secondary benefits to the scalability of the Ethereum blockchain while also providing a long term source of truth which future smart contract designers can treat as a fundamental primitive of programming to the EVM.
+It also has a great name.
 
 # References
