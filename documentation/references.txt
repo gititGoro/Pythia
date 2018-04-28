@@ -1,0 +1,2 @@
+oracles:
+http://bitfury.com/content/5-white-papers-research/contracts-1.1.1.pdf
