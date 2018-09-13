@@ -8,7 +8,7 @@ email: "justingoro@protonmail.com"
 # Abstract
 The Ethereum blockchain is in need of a source of trustless, censorship-resistant oracles in order to bring to market many of the promises offered by the advent of smart contracts. 
 Until now the design of smart contracts is such that they rely on call backs, triggered by oracles. Ideally, a smart contract should be able to dip into a stream of constantly updated data in order to execute based on external conditions. For instance, an insurance contract that can release funds when a change in financial markets occurs without direct human oversight.
-We offer Pythia as solution designed to elicit reliable, regular data from a source of market disciplined oracles, regulated by the Aragon Court System. One of the innovations of Pythia is to separate the source of data from the stream, allowing the system to avoid building up a fragile reliance on any particular APIs. By requiring both oracles and consumers of data to participate in multi-step auctions for feeds, the most popular feeds will bubble up to become the most reliable, establishing an institution of objective truth that smart contract designers can treat as de facto programming primitives.
+We offer Pythia as solution designed to elicit reliable, regular data from a source of market disciplined oracles, regulated by the Ethereum implementation of the Ulex dispute resolution mechanism. One of the innovations of Pythia is to separate the source of data from the stream, allowing the system to avoid building up a fragile reliance on any particular APIs. By requiring both oracles and consumers of data to participate in multi-step auctions for feeds, the most popular feeds will bubble up to become the most reliable, establishing an institution of objective truth that smart contract designers can treat as de facto programming primitives.
 
 # Introduction
 Smart contracts executing on the Ethereum blockchain have no access to events external to the network. As such, they rely on external actors (henceforth oracles) to supply external information. Since smart contracts are trustless and censorship-resistant by default, introducing a reliance on oracles negates this strength of design, precluding certain classes of use cases. Smart contract developers are currently required to choose between designing robust, trustless but ignorant contracts *and* aware contracts that are vulnerable to both trust based and censorship attacks through their reliance on oracles.
@@ -27,7 +27,7 @@ Yet, until now, trustless smart contracts have acted on nothing but events inter
 # Stable Coins
 The volatility of blockchain tokens has necessitated the need for stable coins, tokens which do not fluctuate wildly in value when compared to traditional fiat currencies such as the US dollar. The first generations of solutions offered have been to introduce tokens backed by offchain, real world assets (@Digix). These reserve tokens are vulnerable to censorship attacks through confiscation of real world assets. The MakerDAO collateralizes all of its assets on chain but the source of price feed is still maintained through a list of trusted oracles. The purpose of Pythia in the stable coin market will be to replace trusted nodes and oracles with reliable institutions of data flow, independent from the reputation of individual oracles.
 
-Once accurate feed sources are established, smart contracts can be designed which reference a feed by its ID, a value that is invariant over time, unlike a list of ever changing oracles. In time, certain feeds will become so established that they will be treated as ethereum primitives in contract design.
+Once accurate feed sources are established, smart contracts can be designed which reference a feed by its ID, a value that is invariant over time, unlike a list of ever changing oracles. In time, certain feeds will become so established that they will be treated as Ethereum primitives in contract design.
 
 # Passive and Active Oracles
 The most common type of oracle to date is the active oracle, primarily because of its simplicity of design. Here, a smart contract designer exposes a public function which an oracle can trigger at will. For instance, an oracle which releases funds when triggered by a particular user will have a *release()* function exposed. The oracle is given authority to call a function on a contract and must do so at the appropriate time.
@@ -36,6 +36,9 @@ The second and more indirect type of oracle is the passive oracle. Here, an orac
 
 In the case of the active oracle, the workload of the oracle scales linearly with the number of smart contracts deployed which rely on it. It has to trigger functions on every contract when an event occurs. The passive oracle need only supply a regular feed to the blockchain, remaining ignorant of the number of dependents on its feed. The number of smart contracts relying on that feed can scale without limit.
 Pythia establishes a market place for strictly passive oracles.
+
+## A word on continuous vs point feeds
+Aside from continuous feeds it might be desirable to establish a window of time in which one piece of information is required. For example, rather than require an ongoing exchange rate, require instead the exchange at around 12pm tomorrow. This is also consistent with a passive oracle even though the nature of the data resembles an active oracle. The important distinction here is that the reliance injection of data can be separated from the request for that data and as such the relationship between the caller and the oracle can be decoupled. 
 
 ![Registering a new feed](documentation/userineraction1.png "user")
 
@@ -94,6 +97,17 @@ Once desired feeds are established, would-be oracles can peruse the Feed contrac
         EpochSpan:2500,
         StartingBlock: 124567
     }
+	 { 
+        FeedID: 15,
+        Precision: 2,
+        MarginOfError:0,
+        Name: "CLOUD",
+        Description: "Is it cloudy at the moment in Brisbane (1 or 0)",
+        Frequency: 0,
+        MinumumSuccess:12,
+        EpochSpan:10,
+        StartingBlock: 124700
+    }
 ]
 ```
 
@@ -108,6 +122,11 @@ A corollary of the above design is that popular feeds such as the USD-ETH price 
 
 # Epochs
 Each feed can only be supplied by one oracle at a time. The current oracle has a tenure that lasts for the duration of blocks as specified by **EpochSpan**. The first epoch starts at the property **StartingBlock**. To secure the right to supply for the duration of an epoch, oracles bid on particular epochs which are numbered in sequence. For instance, if EpochSpan is 1000 and the starting block is 0 then epoch1 is from block 0 to block 999, epoch2 is from block 1000 to block 1999 etc. Oracles will search for empty epochs and bid in an auction for a particular epoch. As epochs are filled, a queue of oracles emerges. For popular feeds, the queue of next oracles will be long enough to guarantee a sufficiently long list of filled epochs. 
+
+## Point Feeds
+Feed with ID 15 is different from the others in that it has a frequency parameter of zero and a very short epoch span. This is for feeds that rather than continous are once off events. In this example, the user of the feed is interested if the weather in Brisbane will be cloudy at a very particular point in time that spans 10 blocks. Since the frequency is zero, the oracle is only required to provide one data point in the form of a 1 or 0. While it may at first appear that a frequency of zero implies no data points, one of the principle rules of Pythia is that the oracle has to supply at least 1 data point. Ulex will ensure that this rule overrides the fequency parameter of 0. The MarginOfError is also deliberately set to 0 since the answers required are either 1 or 0 with no grey area.
+
+Point feeds will be useful in stablecoin scenarios where a holder of a coin wishes to trade in their coin from the backing cryptocurrency (such as ether) at a very particular point in time. They're only interested in the exchange rate at the time of redemption and are not concerned with receiving an ongoing stream of exchange rate data. 
 
 # Source Ignorance
 A smart contract relying on a feed will not be able to forecast the list of oracles. Participating in Pythia means relinquishing the notion of insisting that data be provided from a particular trusted source. Instead, designers should only trust the incentives and mechanics of the system to regulate the reliability of the data provided.
@@ -126,7 +145,9 @@ Oracles compete to win the right to a bounty on a given epoch in return for supp
 
 # Dispute Resolution
 The legal system follows the "loser pays" model. If an oracle is suspected of providing bad data, anyone can dispute the data. In order to do so the plaintiff has to stake a deposit equal in size to the deposit staked by the defendant oracle. This means that the cost of false accusation is the same as the cost of being a false oracle. For more popular feeds, both these costs are higher, penalizing bad behaviour more severely.
-In the initial stage of Pythia, the dispute will trigger the Aragon Court System into effect. The rules of Pythia dispute resolution are defined according to the objective standards laid out in the feed (MarginOfError, RequiredFrequency and EpochSpan). The court will be free to decide on its source of truth. The design of Pythia will in the future allow users to bring their own legal system and attach the legal system to a particular feed. The Pythia platform will provide a set of smart contract interfaces that can be used to construct a custom legal system. For instance, suppose that a user wishes a feed to be governed by the 3 judge mechanism outlined in the Ulex documentation (https://github.com/proftomwbell/Ulex). They would implement the interfaces correctly, deploy the necessary smart contracts and then register the entry point contract with the feed. A feed will thus be defined as 
+While it is possible to use any dispute resolution system which embodies the user pays philisophy, Pythia is best coupled with the Ulex open source legal system (https://github.com/proftomwbell/Ulex) since it not only efficiently handles disputes of the type Pythia will raise but accomodates natural language rules such as "Oracles are required to provide at least one data point in an epoch" which judges can interpret accordingly. The rules of Pythia dispute resolution are defined according to the objective standards laid out in the feed (MarginOfError, RequiredFrequency and EpochSpan) as well as the rules specified under the Pythia community. The court will be free to decide on its source of truth. The design of Pythia will in the future allow users to bring their own legal system and attach the legal system to a particular feed so long as it complies with certain requirements for legal systems. It is likely that all legal systems used in the early stages of Pythia will be forks of Ulex. The Pythia platform will provide a set of smart contract interfaces that can be used to integrate with a custom legal system. While each feed can specify the legal system of choice, Pythia itself will be governed under Ulex and so will act as a supreme court in uncertain cases. Neglecting to specify a legal system resorts to defaulting to the version of Ulex employed by Pythia.
+
+Suppose that a user wishes a feed to be governed by the 3 judge mechanism provided by Ulex. They would implement the interfaces correctly, deploy the necessary smart contracts and then register the entry point contract with the feed. A feed will thus be defined as 
 ```
  { 
         FeedID: 110,
@@ -141,7 +162,7 @@ In the initial stage of Pythia, the dispute will trigger the Aragon Court System
         LegalContract: 0xF643724f52BC1316109D343E79b4Ba0dc2Faca88
 }
 ```
-The **LegalContract** property refers to the address of the deployed contract that acts as an entry point into the Ulex legal system. In this case, Aragon's Court System will act as a supreme court.
+The **LegalContract** property refers to the address of the deployed contract that acts as an entry point into the Ulex legal system.
 
 # Attack Vectors
 The attack surface of Pythia is dependent on the vigilance of its users. The non-exhaustive list of attack vectors are:
